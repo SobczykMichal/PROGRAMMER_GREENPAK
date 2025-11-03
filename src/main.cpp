@@ -87,6 +87,9 @@ const char* const eepromString[16] PROGMEM = {
   eepromString15
 };
 
+
+int select_mode();
+char automatic_mode();
 void requestSlaveAddress();
 char requestNVMorEeprom();
 char requestSERIALorMEM();
@@ -113,6 +116,8 @@ void setup() {
   digitalWrite(VDD, HIGH);
   delay(100);
   //Serial.println(F("DEBUGOWANIE"));
+  Serial.println(F("Set mode: a = automatic, m = manual"));
+  select_mode();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,9 +127,13 @@ void loop() {
   slave_address = 0x00;
   char NVMorEEPROM = 0;
   char SERIALorMEM = 0;
-  //char ARDU_FLASHorEEPROM = 0;
   //Serial.println(F("Clearing serial buffer..."));
   while (Serial.available() > 0) Serial.read();
+  if(select_mode() == 1){
+    automatic_mode();
+  }
+  else
+  {
   char selection = query(1);
 
   switch (selection)
@@ -164,8 +173,6 @@ void loop() {
         }
 
         ping();
-
-        //if (writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM) == 0) {
         if (writeChip(NVMorEEPROM, SERIALorMEM) == 0) {
           // Serial.println(F("Done writing!"));
         } else {
@@ -184,6 +191,7 @@ void loop() {
         break;
     default:
         break;
+  }
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -366,7 +374,50 @@ default:
     }
   }
 }
-
+////////////////////////////////////////////////////////////////////////////////
+// select mode
+////////////////////////////////////////////////////////////////////////////////
+int select_mode(){
+    while (1) {
+    if (Serial.available() > 0) {
+      char firstChar = Serial.read();
+      if (firstChar == 'a' || firstChar == 'A') {
+        Serial.println(F("Automatic Write Mode Selected"));
+        return 1;
+      }
+      else if (firstChar == 'm' || firstChar == 'M') {
+        Serial.println(F("Manual Mode Selected"));
+        return 0;
+      }
+      else {
+        Serial.println(F("Invalid selection. You did not enter \"a\" or \"m\"."));
+        continue;
+      }
+    }
+  }
+}
+////////////////////////////////////////////////////////////////////////////////
+// tryb automatyczny 
+////////////////////////////////////////////////////////////////////////////////
+char automatic_mode() {
+  char znak;
+  char command[7];
+  uint8_t  count = 0;
+  Serial.println();
+  Serial.println(F("Automatic Write Mode Selected"));
+  Serial.println(F("Enter full command e. g. w1nma to write to device at address 1, NVM, from MEMORY, ARDUINO EEPROM"));
+  while (1) {
+    if (Serial.available() > 0) {
+      do {
+        znak =Serial.read();
+        command[count] = znak;
+        count++;
+      }
+      while(znak != '\n' && znak != '\r');
+    }
+    Serial.println(command);
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////
 // print hex 8 
 ////////////////////////////////////////////////////////////////////////////////
@@ -465,7 +516,7 @@ int eraseChip(char NVMorEEPROM) {
 // writeChip 
 ////////////////////////////////////////////////////////////////////////////////
 //int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM) {
-int writeChip(char NVMorEEPROM, char SERIALorMEM){
+int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection) {
   int control_code = 0x00;
   int addressForAckPolling = 0x00;
   bool NVM_selected = false;
