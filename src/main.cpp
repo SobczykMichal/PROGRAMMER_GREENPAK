@@ -12,7 +12,7 @@
 #define NVM_SLAVE_ADDR_BYTE 10
 #define NVM_SLAVE_ADDR_OFFSET (NVM_SLAVE_ADDR_PAGE * 16 + NVM_SLAVE_ADDR_BYTE)
 
-uint8_t slave_address = 0x00;
+int slave_address = 0x00;
 bool device_present[16] = {false};
 // Store nvmData in PROGMEM to save on RAM
 const char nvmString0[]  PROGMEM = "00000000000000000000000000000000";
@@ -100,11 +100,11 @@ char query(uint8_t which_menu);
 void PrintHex8(uint8_t data);
 uint8_t readChip(char NVMorEEPROM);
 int eraseChip(char NVMorEEPROM);
-int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address);//, char ARDU_FLASHorEEPROM);
+int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address);
 void ping();
 int ackPolling(int addressForAckPolling);
 void powercycle();
-uint8_t hexCharToInt(char hexChar);
+int hexCharToInt(char hexChar);
 void save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar);
 char requestUpdateEEPROM();
 char requestARDU_EEPROMorFLASH();
@@ -218,11 +218,11 @@ void loop() {
 ////////////////////////////////////////////////////////////////////////////////
 // hex char to int
 ////////////////////////////////////////////////////////////////////////////////
-uint8_t hexCharToInt(char c) {
+int hexCharToInt(char c) {
   if (c >= '0' && c <= '9') return c - '0';
   if (c >= 'A' && c <= 'F') return c - 'A' + 10;
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  return 0;
+  return -1;
 }
 ////////////////////////////////////////////////////////////////////////////////
 // request slave address 
@@ -672,7 +672,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         if (c == '\n' || c == '\r') continue;
 
         // convert char to int
-        uint8_t val = hexCharToInt(c);
+        int val = hexCharToInt(c);
 
         if (first) {
           zmienna1 = val << 4;  // MSB
@@ -699,7 +699,9 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     for (size_t i = 0; i < 16; i++)
     {
       // Pull current page NVM from PROGMEM and place into buffer
-      char buffer [64];
+
+      //char buffer [64];
+      char buffer [33];
       if (NVM_selected)
       {
         char * ptr = (char *) pgm_read_word (&nvmString[i]);
@@ -713,7 +715,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
 
       for (size_t j = 0; j < 16; j++)
       {
-        uint8_t val= (hexCharToInt(buffer[2 * j])<<4)+ hexCharToInt(buffer[(2 * j) + 1]);
+        int val= (hexCharToInt(buffer[2 * j])<<4)+ hexCharToInt(buffer[(2 * j) + 1]);
         buffer_seria[i * 16 + j] = val;
       }
     }
@@ -736,7 +738,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     {
       while(1) {
         clearSerialBuffer();
-        static uint8_t temp=0;
+        int temp=0;
         if(wybor == 0){
         char newSA = query(7);
         temp = hexCharToInt(newSA);
