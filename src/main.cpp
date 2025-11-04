@@ -635,6 +635,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   {
     Serial.println(F("Getting data from SERIAL input"));
     data_from_SERIAL = true;
+    clearSerialBuffer();
   }
   else if (SERIALorMEM == 'm')
   {
@@ -658,11 +659,11 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   {
     //Serial.println(F("PETLA if data from serial")); debugowanie
     
-    uint8_t index = 0;
+    uint16_t index = 0;
     char c;
     uint8_t zmienna1;
     uint8_t zmienna2;
-      bool first = true;  // Flaga do śledzenia, czy aktualny znak jest parzysty czy nieparzysty
+    bool first = true;  // Flaga do śledzenia, czy aktualny znak jest parzysty czy nieparzysty
     while (index < 256) {
       if (Serial.available()) {
         c = Serial.read();
@@ -679,8 +680,8 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         } else {
           zmienna2 = val; // LSB
           buffer_seria[index] = zmienna1 | zmienna2; // Combine MSB and LSB
-          //Serial.print(F("PRZYPISANE DO BUFFERA: ")); debugowanie
-          //Serial.println(buffer_seria[index], HEX); debugowanie
+          //Serial.print(F("PRZYPISANE DO BUFFERA: "));// debugowanie
+          //Serial.println(buffer_seria[index], HEX);// debugowanie
           index++;
           first = true;
         }
@@ -712,9 +713,6 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
 
       for (size_t j = 0; j < 16; j++)
       {
-        //String temp = (String)buffer[2 * j] + (String)buffer[(2 * j) + 1];
-        //long myNum = strtol(&temp[0], NULL, 16);
-        //buffer_seria[i * 16 + j] = (uint8_t) myNum;
         uint8_t val= (hexCharToInt(buffer[2 * j])<<4)+ hexCharToInt(buffer[(2 * j) + 1]);
         buffer_seria[i * 16 + j] = val;
       }
@@ -738,13 +736,12 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     {
       while(1) {
         clearSerialBuffer();
-        //static int temp=0;
         static uint8_t temp=0;
         if(wybor == 0){
         char newSA = query(7);
         temp = hexCharToInt(newSA);
         }
-        else{
+        if(wybor == 1){
           temp = new_address;
         }
         if (temp < 0 || temp > 15)
