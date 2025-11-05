@@ -12,8 +12,6 @@
 #define NVM_SLAVE_ADDR_BYTE 10
 #define NVM_SLAVE_ADDR_OFFSET (NVM_SLAVE_ADDR_PAGE * 16 + NVM_SLAVE_ADDR_BYTE)
 
-int slave_address = 0x00;
-bool device_present[16] = {false};
 // Store nvmData in PROGMEM to save on RAM
 const char nvmString0[]  PROGMEM = "00000000000000000000000000000000";
 const char nvmString1[]  PROGMEM = "000000000000F0030000000000000000";
@@ -89,8 +87,12 @@ const char* const eepromString[16] PROGMEM = {
   eepromString14,
   eepromString15
 };
+int slave_address = 0x00;
+bool device_present[16] = {false};
 int wybor=0;
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
+bool change_address = false;
+
 uint8_t select_mode();
 void automatic_write_mode();
 void requestSlaveAddress();
@@ -418,6 +420,7 @@ uint8_t select_mode(){
 void automatic_write_mode() {
   char command[8]; // 6 znaków + null terminator
   uint8_t index = 0;
+  uint8_t new_int_addr=0;
   //Serial.println();
   ping();
   //Serial.println(F("Enter full command e. g. w1nma2u"));
@@ -456,7 +459,15 @@ void automatic_write_mode() {
   Serial.print(F("updateEEPROM: ")); Serial.println(updateEEPROM);*/
   clearSerialBuffer();
   // check address
-      slave_address = hexCharToInt(addr);
+  if(addr == 'x'){
+    for (uint8_t i = 0; i < 16; i++) {
+          if(device_present[i] == true) {
+            slave_address = i;
+            break;
+          }
+    }
+  } 
+  else slave_address = hexCharToInt(addr);
     //Check for a valid slave address
     if (device_present[slave_address] == false)
     {
@@ -467,7 +478,12 @@ void automatic_write_mode() {
       //PrintHex8(slave_address); // pozniej zakomentowac 
       Serial.println();
     }
-
+  if(newaddr == 'x') new_int_addr = slave_address;
+  else if (newaddr == 'p') change_address = false;
+  else {
+    change_address = true;
+    new_int_addr = hexCharToInt(newaddr);
+  }
   if (cmd== 'w') {
     if (eraseChip(memType) == 0) {
     // Serial.println(F("Done erasing!"));
@@ -475,7 +491,7 @@ void automatic_write_mode() {
      // Serial.println(F("Erasing did not complete correctly!"));
     }
     //ping();
-    if (writeChip(memType, source, storage, updateEEPROM, hexCharToInt(newaddr)) == 0) {
+    if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)) {
       // Serial.println(F("Done writing!"));
       Serial.println(F("OK"));
     } else {
@@ -790,7 +806,8 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
           break;
         }
       }
-      buffer_seria[NVM_SLAVE_ADDR_OFFSET] = slave_address;
+
+      if (change_address == false) buffer_seria[NVM_SLAVE_ADDR_OFFSET] = slave_address;
     }
     // Write each byte of data_array[][] array to the chip
     for (uint8_t i = 0; i < 16; i++) {
