@@ -98,7 +98,8 @@ char requestNVMorEeprom();
 char requestSERIALorMEM();
 char query(uint8_t which_menu);
 void PrintHex8(uint8_t data);
-uint8_t readChip(char NVMorEEPROM);
+//uint8_t readChip(char NVMorEEPROM);
+uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead);
 int eraseChip(char NVMorEEPROM);
 int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address);
 void ping();
@@ -147,7 +148,7 @@ void loop() {
         Serial.println(F("Reading chip!"));
         requestSlaveAddress();
         NVMorEEPROM = requestNVMorEeprom();
-        readChip(NVMorEEPROM);
+        readChip(NVMorEEPROM, 16);
         // Serial.println(F("Done Reading!"));
         break;
     case 'e': 
@@ -166,11 +167,6 @@ void loop() {
     case 'w': 
         Serial.println(F("Writing Chip!"));
 
-        //if((wybor == 1)){
-         // automatic_write_mode();
-        //}
-       // else{
-          
           requestSlaveAddress();
           NVMorEEPROM = requestNVMorEeprom();
           clearSerialBuffer();
@@ -202,7 +198,7 @@ void loop() {
 
         ping();
 
-        readChip(NVMorEEPROM);
+        readChip(NVMorEEPROM, 15);
         // Serial.println(F("Done Reading!"));
         break;
     case 'p': 
@@ -472,16 +468,13 @@ void automatic_write_mode() {
       Serial.println();
     }
 
-
-
   if (cmd== 'w') {
     if (eraseChip(memType) == 0) {
     // Serial.println(F("Done erasing!"));
     } else {
      // Serial.println(F("Erasing did not complete correctly!"));
     }
-
-    ping();
+    //ping();
     if (writeChip(memType, source, storage, updateEEPROM, hexCharToInt(newaddr)) == 0) {
       // Serial.println(F("Done writing!"));
       Serial.println(F("OK"));
@@ -505,10 +498,9 @@ void PrintHex8(uint8_t data) {
 ////////////////////////////////////////////////////////////////////////////////
 // readChip 
 ////////////////////////////////////////////////////////////////////////////////
-uint8_t readChip(char NVMorEEPROM) {
+uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead) {
   int control_code = slave_address << 3;
   int index = 0;
-  int odebrane = 0;
   if (NVMorEEPROM == 'n')
   {
     control_code |= NVM_CONFIG;
@@ -518,7 +510,9 @@ uint8_t readChip(char NVMorEEPROM) {
     control_code |= EEPROM_CONFIG;
   }
 
-  for (uint8_t i = 0; i < 16; i++) {
+  //for (uint8_t i = 0; i < 16; i++) {
+    
+  for (uint8_t i = 0; i < CheckOrRead; i++) {
     Wire.beginTransmission(control_code);
     Wire.write(i << 4);
     Wire.endTransmission(false);
@@ -526,17 +520,20 @@ uint8_t readChip(char NVMorEEPROM) {
     Wire.requestFrom(control_code, 16);
 
     while (Wire.available()) {
-      PrintHex8(Wire.read());
-      //Serial.print(Wire.read(), HEX);
-      //odebrane=hexCharToInt(Wire.read());
-      //Serial.print(odebrane);
-      //Serial.print(Wire.read());
-      /*if (buffer_seria[index]== Wire.read()) Serial.print(F("OK"));
-      Serial.print(F(" *** "));
-      index++;*/
+      if(CheckOrRead == 15){
+        if (buffer_seria[index]== Wire.read()) index++;
+        else{
+          Serial.println(F("Incorrect data!"));
+          return 5;
+        }  
       }
-    Serial.println();
+      if (CheckOrRead == 16){
+        PrintHex8(Wire.read());
+      }
+    }
+    if (CheckOrRead == 16) Serial.println();
   }
+  if (CheckOrRead == 15) Serial.println(F("OK"));
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
