@@ -422,9 +422,7 @@ uint8_t select_mode(){
 void automatic_write_mode() {
   char command[8]; // 6 znaków + null terminator
   uint8_t index = 0;
-
   Serial.println();
-  //Serial.println(F("Automatic Write Mode Selected"));
   ping();
   Serial.println(F("Enter full command e. g. w1nma2u"));
   Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
@@ -485,7 +483,9 @@ void automatic_write_mode() {
     ping();
     if (writeChip(memType, source, storage, updateEEPROM, hexCharToInt(newaddr)) == 0) {
       // Serial.println(F("Done writing!"));
+      Serial.println(F("OK"));
     } else {
+      Serial.println(F("E"));
       Serial.println(F("Writing did not complete correctly!"));
     }
   }
@@ -661,13 +661,27 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     
     uint16_t index = 0;
     char c;
-    uint8_t zmienna1;
-    uint8_t zmienna2;
+    uint8_t zmienna1=0;
+    uint8_t zmienna2=0;
     bool first = true;  // Flaga do śledzenia, czy aktualny znak jest parzysty czy nieparzysty
+    //bool HEXorGP6 = true; // true - HEX, false - GP6
     while (index < 256) {
       if (Serial.available()) {
         c = Serial.read();
-
+        if (c == ' ') {
+          if (first) {
+            continue;
+          }
+          else {
+            // If we were in the middle of a byte, finalize it
+            buffer_seria[index] = zmienna1>>4; // Only MSB but reconvert to LSB
+            //Serial.print(F("PRZYPISANE DO BUFFERA (SPACE): "));// debugowanie
+            //Serial.println(buffer_seria[index], HEX);// debugowanie
+            index++;
+            first = true;
+            continue;
+          }
+        }
         //avoid new lines signs
         if (c == '\n' || c == '\r') continue;
 
@@ -678,7 +692,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
           zmienna1 = val << 4;  // MSB
           first = false;
         } else {
-          zmienna2 = val; // LSB
+           zmienna2 = val; // LSB
           buffer_seria[index] = zmienna1 | zmienna2; // Combine MSB and LSB
           //Serial.print(F("PRZYPISANE DO BUFFERA: "));// debugowanie
           //Serial.println(buffer_seria[index], HEX);// debugowanie
@@ -687,8 +701,8 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         }
       }
     }
-    clearSerialBuffer();
     }
+    clearSerialBuffer();
     // http://www.gammon.com.au/progmem
 
     // Serial.println(F("New NVM data:"));
@@ -737,6 +751,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     if (NVM_selected) /// ZMIANA 
     {
       while(1) {
+        delay(10);
         clearSerialBuffer();
         int temp=0;
         if(wybor == 0){
