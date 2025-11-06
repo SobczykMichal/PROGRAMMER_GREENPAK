@@ -463,6 +463,7 @@ void automatic_write_mode() {
     for (uint8_t i = 0; i < 16; i++) {
           if(device_present[i] == true) {
             slave_address = i;
+            //Serial.print(slave_address);
             break;
           }
     }
@@ -478,11 +479,21 @@ void automatic_write_mode() {
       //PrintHex8(slave_address); // pozniej zakomentowac 
       Serial.println();
     }
-  if(newaddr == 'x') new_int_addr = slave_address;
-  else if (newaddr == 'p') change_address = false;
+  if(newaddr == 'x'){
+    new_int_addr = slave_address;
+    change_address = true;
+    //Serial.print(F("New slave address same like current slave address: "));
+    //Serial.print(new_int_addr);
+  } 
+  else if (newaddr == 'p'){
+    //Serial.print(F("Brak zmiany adresu: "));
+    change_address = false;
+  } 
   else {
     change_address = true;
     new_int_addr = hexCharToInt(newaddr);
+    //Serial.print(F("New slave address: "));  
+    //Serial.print(new_int_addr);
   }
   if (cmd== 'w') {
     if (eraseChip(memType) == 0) {
@@ -491,7 +502,7 @@ void automatic_write_mode() {
      // Serial.println(F("Erasing did not complete correctly!"));
     }
     //ping();
-    if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)) {
+    if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)== 0) {
       // Serial.println(F("Done writing!"));
       Serial.println(F("OK"));
     } else {
@@ -807,7 +818,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         }
       }
 
-      if (change_address == false) buffer_seria[NVM_SLAVE_ADDR_OFFSET] = slave_address;
+      if (change_address == true) buffer_seria[NVM_SLAVE_ADDR_OFFSET] = slave_address;
     }
     // Write each byte of data_array[][] array to the chip
     for (uint8_t i = 0; i < 16; i++) {
@@ -834,6 +845,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
 
       if (ackPolling(addressForAckPolling) == -1)
       {
+        Serial.println(F("Oh No! Something went wrong with ack polling!"));
         return -1;
       } else {
         if(wybor == 0) Serial.println(F("ready")); // print only in manual mode
@@ -858,9 +870,10 @@ void ping() {
 
     if (Wire.endTransmission() == 0) {
      // if(wybor == 0){ // print only in manual mode
-        Serial.print(F("device 0x"));
+        Serial.print(F("D 0x"));
         PrintHex8(i);
-        Serial.println(F(" is present"));
+        Serial.println();
+        //Serial.println(F(" is present"));
      // }
       device_present[i] = true;
     } else {
