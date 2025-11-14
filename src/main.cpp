@@ -109,7 +109,7 @@ void ping();
 int ackPolling(int addressForAckPolling);
 void powercycle();
 int hexCharToInt(char hexChar);
-void save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar);
+bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar);
 char requestUpdateEEPROM();
 char requestARDU_EEPROMorFLASH();
 void clearSerialBuffer();
@@ -1074,7 +1074,10 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     }
 
   if (updateSelection == 'u' ) {
-    save_to_EEPROM(NVMorEEPROM, buffer_seria, sizeof(buffer_seria));
+    if (!(save_to_EEPROM(NVMorEEPROM, buffer_seria, sizeof(buffer_seria)))) {
+    if (wybor=='m')  Serial.println(F("Error updating Arduino EEPROM!"));
+      return -1;
+    }
   }
   else if (updateSelection == 'i'){
     if (wybor=='m') Serial.println(F("Ignore updating to Arduino EEPROM"));
@@ -1140,20 +1143,23 @@ void powercycle() {
 ////////////////////////////////////////////////////////////////////////////////
 // save to EEPROM
 ////////////////////////////////////////////////////////////////////////////////
-void save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
+bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
   boolean success=false;
+  uint16_t base=0; // base address in EEPROM 
   if(NVMorEEPROM == 'n') {
     if(wybor == 'm') Serial.println(F("Saving NVM data to EEPROM...")); // print only in manual mode
     // Copy NVM data to EEPROM data array
+    base=0;
     for (size_t address = 0; address < rozmiar; address++) {
-        EEPROM.update(address, data[address]);
+        EEPROM.update(address+ base, data[address]);
       }
       success = true;
   }
   else if(NVMorEEPROM == 'e') {
     if(wybor == 'm') Serial.println(F("Saving EEPROM data to EEPROM...")); // print only in manual mode
+    base=rozmiar;
     for (size_t address = 0; address < rozmiar; address++) {
-    EEPROM.update(address+rozmiar, data[address]);
+    EEPROM.update(address+base, data[address]);
     }
       success = true;
   }
@@ -1161,11 +1167,31 @@ void save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
     Serial.println(F("ERROR! WRONG PARAMETER!"));
     success=false;
   }
-  if(success){
-    if(wybor == 'm') Serial.println(F("Done Saving to EEPROM!")); // print only in manual mode
+  //if(success){
+ //   if(wybor == 'm') Serial.println(F("Done Saving to EEPROM!")); // print only in manual mode
+//  }
+//  else Serial.println(F("Error Saving to EEPROM!"));
+//Weryfikacja zapisu
+  for (size_t i = 0; i < rozmiar; ++i) {
+    if (EEPROM.read(base + i) != data[i]) {
+      if (wybor == 'm') {
+        Serial.print(F("VERIFY FAIL at address "));
+        Serial.println(base + i);
+      }
+      success = false;
+      break;
+    }
   }
-  else Serial.println(F("Error Saving to EEPROM!"));
+
+  if (success) {
+    if (wybor == 'm') Serial.println(F("Done Saving to EEPROM! (verified)"));
+    return true;
+  } else {
+    Serial.println(F("Error Saving to EEPROM!"));
+    return false;
+  }
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 // Clear Serial Buffer
 //////////////////////////////////////////////////////////////////////////////
