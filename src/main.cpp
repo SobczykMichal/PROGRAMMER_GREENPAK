@@ -89,19 +89,20 @@ const char* const eepromString[16] PROGMEM = {
 };
 int slave_address = 0x00;
 bool device_present[16] = {false};
-int wybor=0;
+char wybor=0;
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false;
+int sprawdzenie=0;
 
-uint8_t select_mode();
-void automatic_write_mode();
-void requestSlaveAddress();
+char select_mode();
+void automatic_mode();
+char requestSlaveAddress();
 char requestNVMorEeprom();
 char requestSERIALorMEM();
+char requestGPAKorArduino();
 char query(uint8_t which_menu);
 void PrintHex8(uint8_t data);
-//uint8_t readChip(char NVMorEEPROM);
-uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead);
+int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM);
 int eraseChip(char NVMorEEPROM);
 int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address);
 void ping();
@@ -136,9 +137,11 @@ void loop() {
   char SERIALorMEM = 0;
   char ARDU_FLASHorEEPROM = 0;
   char updateSelection = 0;
+  char GPorARDU=0;
   clearSerialBuffer();
-  if(wybor == 1){
-    automatic_write_mode();
+  if(wybor == 'a'){
+    ping();
+    automatic_mode();
   }
   else
   {
@@ -148,41 +151,69 @@ void loop() {
   {
     case 'r': 
         Serial.println(F("Reading chip!"));
-        requestSlaveAddress();
-        NVMorEEPROM = requestNVMorEeprom();
-        readChip(NVMorEEPROM, 16);
+        if(requestSlaveAddress() =='q') break; 
+        NVMorEEPROM = requestNVMorEeprom();// wykonuj to jesli request inny niz q
+        if (NVMorEEPROM == 'q'){
+          clearSerialBuffer();
+          break;
+        }
+        clearSerialBuffer();
+        GPorARDU = requestGPAKorArduino();
+        if (GPorARDU == 'q'){
+          clearSerialBuffer();
+          break;
+        }
+        clearSerialBuffer();
+        if(GPorARDU == 'a')ARDU_FLASHorEEPROM = requestARDU_EEPROMorFLASH();
+        else ARDU_FLASHorEEPROM = 0; //jeśli GreenPAK to pomin
+        if (ARDU_FLASHorEEPROM == 'q'){
+          clearSerialBuffer();
+          break;
+        }
+        clearSerialBuffer();
+        readProgram(NVMorEEPROM, 16, GPorARDU, ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!"));
         break;
     case 'e': 
         Serial.println(F("Erasing Chip!"));
-        requestSlaveAddress();
-        NVMorEEPROM = requestNVMorEeprom();
-        
-        if (eraseChip(NVMorEEPROM) == 0) {
-          // Serial.println(F("Done erasing!"));
-        } else {
-          Serial.println(F("Erasing did not complete correctly!"));
+        if(requestSlaveAddress()== 'q'){
+          break;
         }
-        delay(100);
-        ping();
+        NVMorEEPROM = requestNVMorEeprom(); // wykonuj to jesli request inny niz q
+        if (NVMorEEPROM == 'q'){
+          clearSerialBuffer();
+          break;
+        }
+        else{
+          if (eraseChip(NVMorEEPROM) == 0) {
+          // Serial.println(F("Done erasing!"));
+          } 
+          else {
+            Serial.println(F("Erasing did not complete correctly!"));
+          }
+          delay(100);
+          ping();
+        }
         break;
     case 'w': 
         Serial.println(F("Writing Chip!"));
 
-          requestSlaveAddress();
+          if(requestSlaveAddress()=='q') break;;
           NVMorEEPROM = requestNVMorEeprom();
           clearSerialBuffer();
+          if(NVMorEEPROM=='q') break;
           SERIALorMEM = requestSERIALorMEM();
           clearSerialBuffer();
+          if(SERIALorMEM=='q') break;
           if(SERIALorMEM == 'm'){
             ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
             clearSerialBuffer();
-
+            updateSelection='i';
           }
           if(SERIALorMEM == 's'){
             updateSelection = requestUpdateEEPROM();
             clearSerialBuffer();
-          }
+          }       
           if (eraseChip(NVMorEEPROM) == 0) {
             // Serial.println(F("Done erasing!"));
           } else {
@@ -190,7 +221,10 @@ void loop() {
           }
 
           ping();
-          if (writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0) == 0) {
+          sprawdzenie=writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
+          Serial.println(F("Sprawdzam wartosc writa"));
+          Serial.println(sprawdzenie);
+          if (sprawdzenie== 0) {
             // Serial.println(F("Done writing!"));
           } else {
             Serial.println(F("Writing did not complete correctly!"));
@@ -200,13 +234,17 @@ void loop() {
 
         ping();
 
-        readChip(NVMorEEPROM, 15);
+        readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!"));
         break;
     case 'p': 
         Serial.println(F("Pinging!"));
         ping();
         // Serial.println(F("Done Pinging!"));
+        break;
+    case 'a':
+        wybor='a';
+        clearSerialBuffer();
         break;
     default:
         break;
@@ -225,13 +263,18 @@ int hexCharToInt(char c) {
 ////////////////////////////////////////////////////////////////////////////////
 // request slave address 
 ////////////////////////////////////////////////////////////////////////////////
-void requestSlaveAddress() {
+char requestSlaveAddress() {
   ping();
 
   while(1) {
     clearSerialBuffer();
     char mySlaveAddress = query(2);
-    slave_address = hexCharToInt(mySlaveAddress);
+    if (mySlaveAddress=='q'){
+      clearSerialBuffer();
+      Serial.println(F("Back to main menu"));
+      return 'q';
+    } 
+    else slave_address = hexCharToInt(mySlaveAddress);
     //Check for a valid slave address
     if (device_present[slave_address] == false)
     {
@@ -241,7 +284,7 @@ void requestSlaveAddress() {
     else {
       PrintHex8(slave_address);
       Serial.println();
-      return;
+      return 0;
     }
   }
 }
@@ -265,9 +308,37 @@ char requestNVMorEeprom() {
           Serial.println(F("EEPROM"));
           delay(10);
           return 'e';
+      case 'q':
+          Serial.println(F("Back to main menu"));
+          clearSerialBuffer();
+          return 'q';
       default:
           Serial.println(F("Invalid selection. You did not enter \"n\" or \"e\"."));
           continue;
+    }
+  }
+}
+char requestGPAKorArduino(){
+  while(1){
+    clearSerialBuffer();
+    char selection = query(8);
+
+    switch (selection){
+      case 'g':
+        Serial.println(F("GreenPAK"));
+        delay(10);
+      return 'g';
+      case 'a':
+        Serial.println(F("ARDUINO"));
+        delay(10);
+      return 'a';
+      case 'q':
+        Serial.println(F("Back to main menu"));
+        clearSerialBuffer();
+      return 'q';
+      default:
+        Serial.println(F("Invalid selection. You did not enter \"g\" \"a\" ."));
+      continue;
     }
   }
 }
@@ -318,6 +389,11 @@ char requestSERIALorMEM() {
           clearSerialBuffer();
           Serial.println(F("MEMORY"));
           return 'm';
+      case 'q' :
+          clearSerialBuffer();
+          Serial.println(F("Back to main menu"));
+          return 'q';
+          
       default:
           clearSerialBuffer();
           Serial.println(F("Invalid selection. You did not enter \"s\" or \"m\"."));
@@ -379,6 +455,9 @@ case 6:
 case 7:
   Serial.println(F("Enter a new slave address, 0-F:"));
   break;
+case 8:
+  Serial.println(F("MENU: g = GREENPAK, A= ARDUINO:"));
+  break;
 default:
   break;
 }
@@ -392,19 +471,19 @@ default:
 ////////////////////////////////////////////////////////////////////////////////
 // select mode
 ////////////////////////////////////////////////////////////////////////////////
-uint8_t select_mode(){
+char select_mode(){
     while (1) {
     if (Serial.available() > 0) {
       char firstChar = Serial.read();
       if (firstChar == 'a' || firstChar == 'A') {
         //Serial.println(F("Automatic Write Mode Selected"));
         clearSerialBuffer();
-        return 1;
+        return 'a';
       }
       else if (firstChar == 'm' || firstChar == 'M') {
         Serial.println(F("Manual Mode Selected"));
         clearSerialBuffer();
-        return 0;
+        return 'm';
       }
       else {
         Serial.println(F("Invalid selection. You did not enter \"a\" or \"m\"."));
@@ -417,21 +496,36 @@ uint8_t select_mode(){
 ////////////////////////////////////////////////////////////////////////////////
 // tryb automatyczny 
 ////////////////////////////////////////////////////////////////////////////////
-void automatic_write_mode() {
-  char command[8]; // 6 znaków + null terminator
+void automatic_mode() {
+  char command[8]= {0}; // 7 znaków + null terminator
   uint8_t index = 0;
   uint8_t new_int_addr=0;
-  //Serial.println();
-  ping();
   //Serial.println(F("Enter full command e. g. w1nma2u"));
   //Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY/SERIAL, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
 
-  // Czekaj aż odbierzesz dokładnie 6 znaków
+  // Czekaj aż odbierzesz dokładnie 7 znaków
   while (index < 7) {
     if (Serial.available() > 0) {
       char c = Serial.read();
       command[index] = c;
       index++;
+      if(command[0]=='m'){
+        wybor='m';
+        clearSerialBuffer();
+        return;
+      }
+      else if(command[0]=='e' && index ==3){
+        index=7; // zakończ wczytywanie po 3 znakach
+        //c=Serial.read();
+        //command[index]=c;
+        //index++;
+        //c=Serial.read();
+        //command[index]=c;
+        //index=7; // zakończ wczytywanie po 3 znakach
+      } 
+      else if (command[0] == 'r' && index == 5){
+        index=7; // zakończ wczytywanie po 5 znakach
+      }
     if (c == '\n' || c == '\r') {
       index--; // Ignore new line characters
     }      
@@ -447,7 +541,8 @@ void automatic_write_mode() {
   char storage = command[4];
   char newaddr = command[5];
   char updateEEPROM = command[6];
-  // Wyświetlenie
+
+    // Wyświetlenie
   /*
   Serial.println(F("Odebrane znaki:"));
   Serial.print(F("cmd: ")); Serial.println(cmd);
@@ -457,6 +552,62 @@ void automatic_write_mode() {
   Serial.print(F("storage: ")); Serial.println(storage);
   Serial.print(F("newaddr: ")); Serial.println(newaddr);
   Serial.print(F("updateEEPROM: ")); Serial.println(updateEEPROM);*/
+  //Check commands
+  if (cmd != 'w' && cmd != 'e' && cmd != 'r'){
+    Serial.println(F("ERROR! Wrong command!"));
+    return;
+  }
+  if ( (addr >= '0' && addr <= '9') ||   // 1. Sprawdź, czy addr jest cyfrą (między '0' a 'f')
+     (addr >= 'a' && addr <= 'f') ||   // 2. LUB czy jest literą 'x'
+     (addr == 'x') ){
+      //correct command
+     }
+     else{
+      Serial.println(F("ERROR! Wrong addres parameter!"));
+      return;
+     }
+  if(memType!= 'n' && memType!='e'){
+    Serial.println(F("ERROR! Wrong memory type parameter!"));
+    return;
+  }
+  if (cmd == 'w')
+  {
+    ///tutaj daj ze  tylko dla w i r czyli write i read
+    if (source != 's' && source != 'm'){
+      Serial.println(F("ERROR! Wrong source parameter!"));
+      return;
+    }
+    if (storage != 'a' && storage != 'f'){
+      Serial.println(F("ERROR! Wrong storage parameter!"));
+      return;
+    }
+  }
+  if (cmd == 'r' ){
+    if (source != 'g' && source != 'a'){
+      Serial.println(F("ERROR! Wrong source parameter!"));
+      return;
+    }
+    if (storage != 'a' && storage != 'f'){
+      Serial.println(F("ERROR! Wrong storage parameter!"));
+      Serial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
+      return;
+    }
+  }
+  if(cmd =='w'){
+  if ( (newaddr >= '0' && newaddr <= '9') ||   // 1. Sprawdź, czy newaddr jest cyfrą (między '0' a 'f')
+    (newaddr >= 'a' && newaddr <= 'f') ||   // 2. LUB czy jest literą 'x'
+    (newaddr == 'x' || 'p') ){
+    //correct command
+  }
+  else{
+    Serial.println(F("ERROR! Wrong new addres parameter!"));
+    return;
+  }
+  if(updateEEPROM != 'u' && updateEEPROM != 'i'){
+    Serial.println(F("ERROR! Wrong update Eeprom parameter!"));
+    return;
+  }
+  }
   clearSerialBuffer();
   // check address
   if(addr == 'x'){
@@ -477,8 +628,9 @@ void automatic_write_mode() {
     }
     else {
       //PrintHex8(slave_address); // pozniej zakomentowac 
-      Serial.println();
+      //Serial.println();
     }
+    if(cmd=='w'){
   if(newaddr == 'x'){
     new_int_addr = slave_address;
     change_address = true;
@@ -495,22 +647,32 @@ void automatic_write_mode() {
     //Serial.print(F("New slave address: "));  
     //Serial.print(new_int_addr);
   }
-  if (cmd== 'w') {
     if (eraseChip(memType) == 0) {
-    // Serial.println(F("Done erasing!"));
+     Serial.println(F("Done erasing!"));
     } else {
-     // Serial.println(F("Erasing did not complete correctly!"));
+      Serial.println(F("Erasing did not complete correctly!"));
     }
-    //ping();
-    if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)== 0) {
+    ping();
+    sprawdzenie=writeChip(memType, source, storage, updateEEPROM, new_int_addr); 
+    if (sprawdzenie== 0) {
+    //if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)== 0) {
       // Serial.println(F("Done writing!"));
       Serial.println(F("OK"));
     } else {
       Serial.println(F("E"));
       //Serial.println(F("Writing did not complete correctly!"));
     }
+    Serial.println(sprawdzenie);
   }
-
+  else if (cmd =='r'){
+    Serial.println(F("Reading chip!"));
+    sprawdzenie=readProgram(memType, 16, source, storage);
+    // Serial.println(F("Done Reading!"));
+  }
+  else if (cmd =='e'){
+    Serial.println(F("Erasing chip!"));
+    sprawdzenie=eraseChip(memType);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 // print hex 8 
@@ -525,7 +687,7 @@ void PrintHex8(uint8_t data) {
 ////////////////////////////////////////////////////////////////////////////////
 // readChip 
 ////////////////////////////////////////////////////////////////////////////////
-uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead) {
+int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM) {
   int control_code = slave_address << 3;
   int index = 0;
   if (NVMorEEPROM == 'n')
@@ -538,7 +700,7 @@ uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead) {
   }
 
   //for (uint8_t i = 0; i < 16; i++) {
-    
+  if((NVMorEEPROM == 'n' || NVMorEEPROM == 'e') && GPAKorArdu == 'g'){
   for (uint8_t i = 0; i < CheckOrRead; i++) {
     Wire.beginTransmission(control_code);
     Wire.write(i << 4);
@@ -551,7 +713,7 @@ uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead) {
         if (buffer_seria[index]== Wire.read()) index++;
         else{
           Serial.println(F("Incorrect data!"));
-          return 5;
+          return -1;
         }  
       }
       if (CheckOrRead == 16){
@@ -562,6 +724,46 @@ uint8_t readChip(char NVMorEEPROM, uint8_t CheckOrRead) {
   }
   if (CheckOrRead == 15) Serial.println(F("OK"));
   return 0;
+  }
+  else if(GPAKorArdu == 'a'){
+    if (ARDU_FLASHorEEPROM== 'a'){
+      for (size_t i = 0; i < 16; i++)
+      {
+        for (size_t j = 0; j < 16; j++)
+        {
+          size_t address = i * 16 + j;
+          uint8_t value = EEPROM.read(address);
+          buffer_seria[i * 16 + j] = value;
+          PrintHex8(buffer_seria[i * 16 + j]);
+        }
+        Serial.println();
+      }
+    }
+    else if(ARDU_FLASHorEEPROM == 'f'){
+      for (size_t i = 0; i < 16; i++){
+        // Pull current page NVM from PROGMEM and place into buffer
+        char buffer [33];
+        if (NVMorEEPROM== 'n'){
+          char * ptr = (char *) pgm_read_word (&nvmString[i]);
+          strcpy_P(buffer, ptr);
+        }
+        else if (NVMorEEPROM == 'e'){
+          char * ptr = (char *) pgm_read_word (&eepromString[i]);
+          strcpy_P(buffer, ptr);
+        }
+
+        for (size_t j = 0; j < 16; j++)
+        {
+          int val= (hexCharToInt(buffer[2 * j])<<4)+ hexCharToInt(buffer[(2 * j) + 1]);
+          buffer_seria[i * 16 + j] = val;
+          PrintHex8(buffer_seria[i * 16 + j]);
+        }
+        Serial.println();
+      }
+      
+      return 0;
+    } 
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 // eraseChip 
@@ -575,7 +777,7 @@ int eraseChip(char NVMorEEPROM) {
   uint8_t addressForAckPolling = control_code;
 
   for (uint8_t i = 0; i < 16; i++) {
-    if(wybor == 0){
+    if(wybor == 'm'){
       Serial.print(F("Erasing page: 0x"));
       PrintHex8(i);
       Serial.print(F(" "));
@@ -585,12 +787,12 @@ int eraseChip(char NVMorEEPROM) {
 
     if (NVMorEEPROM == 'n')
     {
-      if (wybor == 0) Serial.print(F("NVM ")); //print only in manual mode
+      if (wybor == 'm') Serial.print(F("NVM ")); //print only in manual mode
       Wire.write(0x80 | i);
     }
     else if (NVMorEEPROM == 'e')
     {
-      if (wybor == 0) Serial.print(F("EEPROM ")); //print only in manual mode
+      if (wybor == 'm') Serial.print(F("EEPROM ")); //print only in manual mode
       Wire.write(0x90 | i);
     }
     
@@ -613,10 +815,10 @@ int eraseChip(char NVMorEEPROM) {
     {
       return -1;
     } else {
-      if(wybor == 0) Serial.print(F("ready ")); // print only in manual mode
+      if(wybor == 'm') Serial.print(F("ready ")); // print only in manual mode
       delay(100);
     }
-    if(wybor == 0) Serial.println(); // print only in manual mode 
+    if(wybor == 'm') Serial.println(); // print only in manual mode 
   }
 
   powercycle();
@@ -655,14 +857,19 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   }
   else if (NVMorEEPROM == 'e')
   {
-    // Serial.println(F("Writing EEPROM"));
+     Serial.println(F("Writing EEPROM with ADDRESS"));
+     Serial.println(slave_address);
     control_code = slave_address << 3;
     control_code |= EEPROM_CONFIG;
     EEPROM_selected = true;
     addressForAckPolling = slave_address << 3;
   }
+  else{
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    return -1;
+  }
 
-  if(wybor == 0){
+  if(wybor == 'm'){
     Serial.print(F("Control Code: 0x")); // print only in manual mode
     PrintHex8(control_code);
     Serial.println();
@@ -676,32 +883,35 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   }
   else if (SERIALorMEM == 'm')
   {
-    if(wybor == 0) Serial.println(F("Getting data from MEMORY")); // print only in manual mode
+    if(wybor == 'm') Serial.println(F("Getting data from MEMORY")); // print only in manual mode
     data_from_MEMORY = true;
 
-    //ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
-
-    if (ARDU_FLASHorEEPROM == 'a')
-    {
+    if (ARDU_FLASHorEEPROM == 'a'){
       //Serial.println(F("Using ARDUINO EEPROM MEMORY"));
       data_from_ARDUINO_EEPROM = true;
     }
-    else if (ARDU_FLASHorEEPROM == 'f')
-    {
+    else if (ARDU_FLASHorEEPROM == 'f'){
       //Serial.println(F("Using FLASH ARDUINO MEMORY"));
       data_from_ARDUINO_FLASH = true;
     }
+    else{
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    return -1;
+    }
+  }
+  else{
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    return -1;
   }
   if (data_from_SERIAL)
   {
     //Serial.println(F("PETLA if data from serial")); debugowanie
     
     uint16_t index = 0;
-    char c;
+    char c=0;
     uint8_t zmienna1=0;
     uint8_t zmienna2=0;
     bool first = true;  // Flaga do śledzenia, czy aktualny znak jest parzysty czy nieparzysty
-    //bool HEXorGP6 = true; // true - HEX, false - GP6
     while (index < 256) {
       if (Serial.available()) {
         c = Serial.read();
@@ -740,8 +950,6 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     }
     }
     clearSerialBuffer();
-    // http://www.gammon.com.au/progmem
-
     // Serial.println(F("New NVM data:"));
     if(data_from_MEMORY)
     {
@@ -750,8 +958,6 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     for (size_t i = 0; i < 16; i++)
     {
       // Pull current page NVM from PROGMEM and place into buffer
-
-      //char buffer [64];
       char buffer [33];
       if (NVM_selected)
       {
@@ -791,16 +997,30 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         delay(10);
         clearSerialBuffer();
         int temp=0;
-        if(wybor == 0){
+        if(wybor == 'm'){
         char newSA = query(7);
-        temp = hexCharToInt(newSA);
+        if(newSA == 'x'){
+          temp=slave_address;
+          change_address = true;
         }
-        if(wybor == 1){
+        else if(newSA == 'p') change_address=false;
+        else if(newSA == 'q') return -1;
+        else{
+          change_address = true;
+          temp = hexCharToInt(newSA);
+        }
+        //temp = hexCharToInt(newSA);
+        if (newSA=='q'){
+          Serial.println(F("Back to main menu"));
+          return -1;
+        } 
+        }
+        if(wybor == 'a'){
           temp = new_address;
         }
         if (temp < 0 || temp > 15)
         {
-          if(wybor == 0){
+          if(wybor == 'm'){
             Serial.println(temp);
             Serial.println(F(" is not a valid slave address."));
           }
@@ -809,7 +1029,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         else 
         {
           slave_address = temp;
-          if(wybor == 0){ // print only in manual mode
+          if(wybor == 'm'){ // print only in manual mode
             Serial.print(F("0x"));
             PrintHex8(slave_address);
             Serial.println();
@@ -824,19 +1044,19 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     for (uint8_t i = 0; i < 16; i++) {
       Wire.beginTransmission(control_code);
       Wire.write(i << 4);
-      if(wybor == 0){
+      if(wybor == 'm'){
         PrintHex8(i);
         Serial.print(F(" "));
       }
       for (uint8_t j = 0; j < 16; j++) {
           Wire.write(buffer_seria[i*16 + j]);
-          if(wybor == 0) PrintHex8(buffer_seria[i*16 + j]); // print only in manual mode
+          if(wybor == 'm') PrintHex8(buffer_seria[i*16 + j]); // print only in manual mode
       }
       
       if (Wire.endTransmission() == 0) {
-        if(wybor == 0) Serial.print(F(" ack ")); // print only in manual mode
+        if(wybor == 'm') Serial.print(F(" ack ")); // print only in manual mode
       } else {
-        if(wybor == 0){ // print only in manual mode
+        if(wybor == 'm'){ // print only in manual mode
           Serial.print(F(" nack\n"));
           Serial.println(F("Oh No! Something went wrong while programming!"));
         }
@@ -848,7 +1068,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         Serial.println(F("Oh No! Something went wrong with ack polling!"));
         return -1;
       } else {
-        if(wybor == 0) Serial.println(F("ready")); // print only in manual mode
+        if(wybor == 'm') Serial.println(F("ready")); // print only in manual mode
         delay(100);
       }
     }
@@ -856,6 +1076,10 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   if (updateSelection == 'u' ) {
     save_to_EEPROM(NVMorEEPROM, buffer_seria, sizeof(buffer_seria));
   }
+  else if (updateSelection == 'i'){
+    if (wybor=='m') Serial.println(F("Ignore updating to Arduino EEPROM"));
+  }
+  else return -1;
     powercycle();
     return 0;
 }
@@ -869,7 +1093,7 @@ void ping() {
     Wire.beginTransmission(i << 3);
 
     if (Wire.endTransmission() == 0) {
-     // if(wybor == 0){ // print only in manual mode
+     // if(wybor == 'm'){ // print only in manual mode
         Serial.print(F("D 0x"));
         PrintHex8(i);
         Serial.println();
@@ -907,7 +1131,7 @@ int ackPolling(int addressForAckPolling) {
 // power cycle 
 ////////////////////////////////////////////////////////////////////////////////
 void powercycle() {
-  if(wybor == 0) Serial.println(F("Power Cycling!")); // print only in manual mode
+  if(wybor == 'm') Serial.println(F("Power Cycling!")); // print only in manual mode
   digitalWrite(VDD, LOW);
   delay(500);
   digitalWrite(VDD, HIGH);
@@ -919,22 +1143,26 @@ void powercycle() {
 void save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
   boolean success=false;
   if(NVMorEEPROM == 'n') {
-    if(wybor == 0) Serial.println(F("Saving NVM data to EEPROM...")); // print only in manual mode
+    if(wybor == 'm') Serial.println(F("Saving NVM data to EEPROM...")); // print only in manual mode
     // Copy NVM data to EEPROM data array
     for (size_t address = 0; address < rozmiar; address++) {
         EEPROM.update(address, data[address]);
       }
       success = true;
   }
-  if(NVMorEEPROM == 'e') {
-    if(wybor == 0) Serial.println(F("Saving EEPROM data to EEPROM...")); // print only in manual mode
+  else if(NVMorEEPROM == 'e') {
+    if(wybor == 'm') Serial.println(F("Saving EEPROM data to EEPROM...")); // print only in manual mode
     for (size_t address = 0; address < rozmiar; address++) {
     EEPROM.update(address+rozmiar, data[address]);
     }
       success = true;
   }
+  else{
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    success=false;
+  }
   if(success){
-    if(wybor == 0) Serial.println(F("Done Saving to EEPROM!")); // print only in manual mode
+    if(wybor == 'm') Serial.println(F("Done Saving to EEPROM!")); // print only in manual mode
   }
   else Serial.println(F("Error Saving to EEPROM!"));
 }
