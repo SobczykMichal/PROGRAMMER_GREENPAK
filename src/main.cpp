@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <EEPROM.h>
+#include <CRC.h>
 
 #define NVM_CONFIG 0x02
 #define EEPROM_CONFIG 0x03
@@ -93,7 +94,7 @@ char wybor=0;
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false;
 int sprawdzenie=0;
-
+uint8_t CRC8fromSerial = 0; // Nowa zmienna na wynik CRC-8
 char select_mode();
 void automatic_mode();
 char requestSlaveAddress();
@@ -113,6 +114,7 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar);
 char requestUpdateEEPROM();
 char requestARDU_EEPROMorFLASH();
 void clearSerialBuffer();
+uint8_t calculateCRC8(uint8_t *data, size_t length);
 ////////////////////////////////////////////////////////////////////////////////
 // setup 
 ////////////////////////////////////////////////////////////////////////////////
@@ -250,6 +252,20 @@ void loop() {
         break;
   }
   }
+}
+////////////////////////////////////////////////////////////////////////////////////////
+// calculateCRC8
+////////////////////////////////////////////////////////////////////////////////////////
+uint8_t calculateCRC8(uint8_t *data, size_t length) {
+    // Używamy standardowego wielomianu CRC-8 (0x07), init 0x00, bez inwersji
+    // Parametry: (Polynomial, Initial Value, Final XOR, RefIn, RefOut)
+    CRC8 crc(0x07, 0x00, 0x00, false, false);
+    
+    crc.reset();
+    for (size_t i = 0; i < length; i++) {
+        crc.add(data[i]);
+    }
+    return crc.calc();
 }
 ////////////////////////////////////////////////////////////////////////////////
 // hex char to int
@@ -934,7 +950,12 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
 
         // convert char to int
         int val = hexCharToInt(c);
-
+        // --- DODAJ TEN WARUNEK ---
+        if (val == -1) {
+           // Znak nie jest cyfrą hex (np. tabulacja, śmieć). Ignorujemy go.
+           continue; 
+        }
+        // -------------------------
         if (first) {
           zmienna1 = val << 4;  // MSB
           first = false;
@@ -948,6 +969,11 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         }
       }
     }
+    // --- DODANO OBLICZANIE CRC-8 ---
+    CRC8fromSerial = calculateCRC8(buffer_seria, 256);
+    Serial.print(F("CRC8: "));
+    Serial.println(CRC8fromSerial, HEX);
+    // ----
     }
     clearSerialBuffer();
     // Serial.println(F("New NVM data:"));
