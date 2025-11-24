@@ -99,19 +99,19 @@ void automatic_mode();
 char requestSlaveAddress();
 char requestNVMorEeprom();
 char requestSERIALorMEM();
+char requestUpdateEEPROM();
+char requestARDU_EEPROMorFLASH();
 char requestGPAKorArduino();
 char query(uint8_t which_menu);
-void PrintHex8(uint8_t data);
 int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM);
 int eraseChip(char NVMorEEPROM);
 int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address);
 void ping();
 int ackPolling(int addressForAckPolling);
 void powercycle();
-int hexCharToInt(char hexChar);
 bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar);
-char requestUpdateEEPROM();
-char requestARDU_EEPROMorFLASH();
+void PrintHex8(uint8_t data);
+int hexCharToInt(char hexChar);
 void clearSerialBuffer();
 uint8_t calculateCRC8(uint8_t *data, size_t length);
 
@@ -964,7 +964,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         }
       }
     }
-    // --- DODANO OBLICZANIE CRC-8 ---
+    // --- OBLICZANIE CRC-8 ---
     CRC8fromSerial = calculateCRC8(buffer_seria, 256);
     Serial.print(F("CRC8: "));
     Serial.println(CRC8fromSerial, HEX);
