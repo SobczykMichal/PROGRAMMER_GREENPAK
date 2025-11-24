@@ -7,8 +7,7 @@
 
 #define NVM_CONFIG 0x02
 #define EEPROM_CONFIG 0x03
-#define VDD 2
-
+#define VDD 2 // GreenPAK VDD
 #define NVM_SLAVE_ADDR_PAGE 12
 #define NVM_SLAVE_ADDR_BYTE 10
 #define NVM_SLAVE_ADDR_OFFSET (NVM_SLAVE_ADDR_PAGE * 16 + NVM_SLAVE_ADDR_BYTE)
@@ -32,7 +31,6 @@ const char nvmString13[] PROGMEM = "00000000000000000000000000000000";
 const char nvmString14[] PROGMEM = "00000000000000000000000000000000";
 //                               ↑↑ 0 1 2 3 4 5 6 7 8 9 a b c d e f
 const char nvmString15[] PROGMEM = "000000000000000000000000000000A5";
-
 // Store eepromData in PROGMEM to save on RAM
 const char eepromString0[]  PROGMEM = "00000000000000000000000000000000";
 const char eepromString1[]  PROGMEM = "00000000000000000000000000000000";
@@ -50,7 +48,6 @@ const char eepromString12[] PROGMEM = "00000000000000000000000000000000";
 const char eepromString13[] PROGMEM = "00000000000000000000000000000000";
 const char eepromString14[] PROGMEM = "00000000000000000000000000000000";
 const char eepromString15[] PROGMEM = "00000000000000000000000000000000";
-
 const char* const nvmString[16] PROGMEM = {
   nvmString0,
   nvmString1,
@@ -69,7 +66,6 @@ const char* const nvmString[16] PROGMEM = {
   nvmString14,
   nvmString15
 };
-
 const char* const eepromString[16] PROGMEM = {
   eepromString0,
   eepromString1,
@@ -88,14 +84,17 @@ const char* const eepromString[16] PROGMEM = {
   eepromString14,
   eepromString15
 };
+
 int slave_address = 0x00;
-bool device_present[16] = {false};
-char wybor=0;
+bool device_present[16] = {false}; 
+char wybor=0; // wybor trybu
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
-bool change_address = false;
-int sprawdzenie=0;
-uint8_t CRC8fromSerial = 0; // Nowa zmienna na wynik CRC-8
-char select_mode();
+bool change_address = false; // flaga zmiany adresu
+int sprawdzenie=0; // sprawdzanie wyniku writeChip
+uint8_t CRC8fromSerial = 0; // wynik CRC-8
+
+
+char select_mode(); // wybór trybu
 void automatic_mode();
 char requestSlaveAddress();
 char requestNVMorEeprom();
@@ -115,6 +114,7 @@ char requestUpdateEEPROM();
 char requestARDU_EEPROMorFLASH();
 void clearSerialBuffer();
 uint8_t calculateCRC8(uint8_t *data, size_t length);
+
 ////////////////////////////////////////////////////////////////////////////////
 // setup 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +125,6 @@ void setup() {
   pinMode(VDD, OUTPUT);  // This will be the GreenPAK's VDD
   digitalWrite(VDD, HIGH);
   delay(100);
-  //Serial.println(F("DEBUGOWANIE"));
   Serial.println(F("Set mode: a = automatic writing, m = manual"));
   wybor=select_mode();
 }
@@ -224,15 +223,13 @@ void loop() {
 
           ping();
           sprawdzenie=writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
-          Serial.println(F("Sprawdzam wartosc writa"));
-          Serial.println(sprawdzenie);
+          //Serial.println(F("Sprawdzam wartosc writa"));
+          //Serial.println(sprawdzenie);
           if (sprawdzenie== 0) {
             // Serial.println(F("Done writing!"));
           } else {
             Serial.println(F("Writing did not complete correctly!"));
           }
-
-      //}
 
         ping();
 
@@ -249,6 +246,8 @@ void loop() {
         clearSerialBuffer();
         break;
     default:
+        clearSerialBuffer();
+        Serial.println(F("Invalid selection. You did not enter \"r\", \"e\", \"w\", \"p\", \"a\"."));
         break;
   }
   }
@@ -524,7 +523,12 @@ void automatic_mode() {
     if (Serial.available() > 0) {
       char c = Serial.read();
       command[index] = c;
+      //Serial.println(command[index]); // Debug: print each received character
+      //delay(5);
       index++;
+      if (c == '\n' || c == '\r') {
+      index--; // Ignore new line characters
+      }            
       if(command[0]=='m'){
         wybor='m';
         clearSerialBuffer();
@@ -532,19 +536,10 @@ void automatic_mode() {
       }
       else if(command[0]=='e' && index ==3){
         index=7; // zakończ wczytywanie po 3 znakach
-        //c=Serial.read();
-        //command[index]=c;
-        //index++;
-        //c=Serial.read();
-        //command[index]=c;
-        //index=7; // zakończ wczytywanie po 3 znakach
       } 
       else if (command[0] == 'r' && index == 5){
         index=7; // zakończ wczytywanie po 5 znakach
       }
-    if (c == '\n' || c == '\r') {
-      index--; // Ignore new line characters
-    }      
     }
 
   }
@@ -678,7 +673,7 @@ void automatic_mode() {
       Serial.println(F("E"));
       //Serial.println(F("Writing did not complete correctly!"));
     }
-    Serial.println(sprawdzenie);
+    //Serial.println(sprawdzenie);
   }
   else if (cmd =='r'){
     Serial.println(F("Reading chip!"));
@@ -873,8 +868,8 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   }
   else if (NVMorEEPROM == 'e')
   {
-     Serial.println(F("Writing EEPROM with ADDRESS"));
-     Serial.println(slave_address);
+    // Serial.println(F("Writing EEPROM with ADDRESS"));
+    // Serial.println(slave_address);
     control_code = slave_address << 3;
     control_code |= EEPROM_CONFIG;
     EEPROM_selected = true;
