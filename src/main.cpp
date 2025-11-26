@@ -92,7 +92,7 @@ uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false; // flaga zmiany adresu
 int sprawdzenie=0; // sprawdzanie wyniku writeChip
 uint8_t CRC8fromSerial = 0; // wynik CRC-8
-
+uint16_t offsetAddress = 0; // offset do zapisu nowego adresu
 
 char select_mode(); // wybór trybu
 void automatic_mode();
@@ -703,10 +703,12 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
   int index = 0;
   if (NVMorEEPROM == 'n')
   {
+    offsetAddress=0;// NVM starts from address 0 in Arduino EEPROM
     control_code |= NVM_CONFIG;
   }
   else if (NVMorEEPROM == 'e')
   {
+    offsetAddress=256; // EEPROM starts from address 256 in Arduino EEPROM
     control_code |= EEPROM_CONFIG;
   }
 
@@ -718,16 +720,25 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
     Wire.endTransmission(false);
     delay(10);
     Wire.requestFrom(control_code, 16);
-
+    uint8_t gpakVal=0; // wartość z GreenPAK
     while (Wire.available()) {
-      if(CheckOrRead == 15){
-        if (buffer_seria[index]== Wire.read()) index++;
+      if(CheckOrRead == 15){ // check data
+        gpakVal= Wire.read();
+        if (buffer_seria[index]== gpakVal) index++;
         else{
-          Serial.println(F("Incorrect data!"));
-          return -1;
+          Serial.println(F("Incorrect data! Blad na idneksie:"));
+          Serial.println(index); // debug
+          Serial.print(F("Wartosc greenpaka: ")); // debug
+          PrintHex8(gpakVal); // debug
+          Serial.println(); // debug
+          Serial.print(F("Wartosc z buffer_seria: ")); // debug
+          PrintHex8(buffer_seria[index]); // debug
+          index++;
+          Serial.println();
+          //return -1;
         }  
       }
-      if (CheckOrRead == 16){
+      if (CheckOrRead == 16){ // read and print
         PrintHex8(Wire.read());
       }
     }
@@ -738,12 +749,14 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
   }
   else if(GPAKorArdu == 'a'){
     if (ARDU_FLASHorEEPROM== 'a'){
+
+
       for (size_t i = 0; i < 16; i++)
       {
         for (size_t j = 0; j < 16; j++)
         {
           size_t address = i * 16 + j;
-          uint8_t value = EEPROM.read(address);
+          uint8_t value = EEPROM.read(address+offsetAddress);
           buffer_seria[i * 16 + j] = value;
           PrintHex8(buffer_seria[i * 16 + j]);
         }
@@ -1000,12 +1013,20 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     }
     if (data_from_ARDUINO_EEPROM)
     {
+      if (NVM_selected)
+      {
+        offsetAddress = 0;
+      }
+      else if (EEPROM_selected)
+      {
+        offsetAddress = 256;
+      }
     for (size_t i = 0; i < 16; i++)
     {
       for (size_t j = 0; j < 16; j++)
       {
         size_t address = i * 16 + j;
-        uint8_t value = EEPROM.read(address);
+        uint8_t value = EEPROM.read(address+offsetAddress);
         buffer_seria[i * 16 + j] = value;
       }
     }
@@ -1166,21 +1187,20 @@ void powercycle() {
 ////////////////////////////////////////////////////////////////////////////////
 bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
   boolean success=false;
-  uint16_t base=0; // base address in EEPROM 
   if(NVMorEEPROM == 'n') {
     if(wybor == 'm') Serial.println(F("Saving NVM data to EEPROM...")); // print only in manual mode
     // Copy NVM data to EEPROM data array
-    base=0;
+     offsetAddress = 0; //brak offsetu do zapisu programu do nvm
     for (size_t address = 0; address < rozmiar; address++) {
-        EEPROM.update(address+ base, data[address]);
+        EEPROM.update(address+ offsetAddress, data[address]);
       }
       success = true;
   }
   else if(NVMorEEPROM == 'e') {
     if(wybor == 'm') Serial.println(F("Saving EEPROM data to EEPROM...")); // print only in manual mode
-    base=rozmiar;
+    offsetAddress=256; // offset do zapisu programu do eeprom
     for (size_t address = 0; address < rozmiar; address++) {
-    EEPROM.update(address+base, data[address]);
+    EEPROM.update(address+offsetAddress, data[address]);
     }
       success = true;
   }
@@ -1194,10 +1214,10 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
 //  else Serial.println(F("Error Saving to EEPROM!"));
 //Weryfikacja zapisu
   for (size_t i = 0; i < rozmiar; ++i) {
-    if (EEPROM.read(base + i) != data[i]) {
+    if (EEPROM.read(offsetAddress + i) != data[i]) {
       if (wybor == 'm') {
         Serial.print(F("VERIFY FAIL at address "));
-        Serial.println(base + i);
+        Serial.println(offsetAddress + i);
       }
       success = false;
       break;
