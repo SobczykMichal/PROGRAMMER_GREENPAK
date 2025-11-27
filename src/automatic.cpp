@@ -4,40 +4,49 @@
 #include "memory.h"
 #include "menu.h"
 #include <Arduino.h>
-void automatic_mode() {
+int automatic_mode() {
   char command[8]= {0}; // 7 znaków + null terminator
   uint8_t index = 0;
   uint8_t new_int_addr=0;
+  ///// Display for user, comment for final version to avoid unnecessary output
   //Serial.println(F("Enter full command e. g. w1nma2u"));
   //Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY/SERIAL, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
 
   // Czekaj aż odbierzesz dokładnie 7 znaków
   while (index < 7) {
-    if (Serial.available() > 0) {
+    if (Serial.available() > 0 || mySerial.available() > 0) {
+      
       char c = Serial.read();
       command[index] = c;
+      index++;
       //Serial.println(command[index]); // Debug: print each received character
       //delay(5);
-      index++;
       if (c == '\n' || c == '\r') {
       index--; // Ignore new line characters
-      }            
-      if(command[0]=='m'){
-        wybor='m';
-        clearSerialBuffer();
-        return;
       }
-      else if(command[0]=='e' && index ==3){
-        index=7; // zakończ wczytywanie po 3 znakach
-      } 
-      else if (command[0] == 'r' && index == 5){
-        index=7; // zakończ wczytywanie po 5 znakach
+      else{
+        if(command[0]=='m'){
+          wybor='m'; // go to manual mode
+          clearSerialBuffer();
+          return 0;
+        }
+        else if(command[0]=='e' && index ==3){
+          index=7; // end reading after 3 characters
+        } 
+        else if (command[0] == 'r' && index == 5){
+          index=7; // end reading after 5 characters
+        }
+        else if (command[0] != 'm' && command[0] != 'e' && command[0] != 'r' && command[0] != 'w'){
+          Serial.println(F("ERROR! Wrong first command!"));
+          index=0;
+          clearSerialBuffer();
+          return -1;
+        }
       }
     }
-
   }
   clearSerialBuffer();
-  // Przypisanie do zmiennych
+  // Parse command
   char cmd = command[0];
   char addr = command[1];
   char memType = command[2];
@@ -46,7 +55,7 @@ void automatic_mode() {
   char newaddr = command[5];
   char updateEEPROM = command[6];
 
-    // Wyświetlenie
+    // Debug: Display logs
   /*
   Serial.println(F("Odebrane znaki:"));
   Serial.print(F("cmd: ")); Serial.println(cmd);
@@ -55,127 +64,112 @@ void automatic_mode() {
   Serial.print(F("source: ")); Serial.println(source);
   Serial.print(F("storage: ")); Serial.println(storage);
   Serial.print(F("newaddr: ")); Serial.println(newaddr);
-  Serial.print(F("updateEEPROM: ")); Serial.println(updateEEPROM);*/
+  Serial.print(F("updateEEPROM: ")); Serial.println(updateEEPROM);
+  */
   //Check commands
-  if (cmd != 'w' && cmd != 'e' && cmd != 'r'){
-    Serial.println(F("ERROR! Wrong command!"));
-    return;
-  }
-  if ( (addr >= '0' && addr <= '9') ||   // 1. Sprawdź, czy addr jest cyfrą (między '0' a 'f')
-     (addr >= 'a' && addr <= 'f') ||   // 2. LUB czy jest literą 'x'
-     (addr == 'x') ){
-      //correct command
+  if ( (addr >= '0' && addr <= '9') ||   // 1. check if addr is a digit (between '0' and 'f')
+     (addr >= 'a' && addr <= 'f') ||   
+     (addr == 'x') ){ // 2. OR if it is letter 'x'
      }
      else{
       Serial.println(F("ERROR! Wrong addres parameter!"));
-      return;
+      return -1;
      }
   if(memType!= 'n' && memType!='e'){
     Serial.println(F("ERROR! Wrong memory type parameter!"));
-    return;
+    return -1;
   }
   if (cmd == 'w')
   {
-    ///tutaj daj ze  tylko dla w i r czyli write i read
     if (source != 's' && source != 'm'){
       Serial.println(F("ERROR! Wrong source parameter!"));
-      return;
+      return -1;
     }
     if (storage != 'a' && storage != 'f'){
       Serial.println(F("ERROR! Wrong storage parameter!"));
-      return;
+      return -1;
     }
   }
   if (cmd == 'r' ){
     if (source != 'g' && source != 'a'){
       Serial.println(F("ERROR! Wrong source parameter!"));
-      return;
+      return -1;
     }
     if (storage != 'a' && storage != 'f'){
       Serial.println(F("ERROR! Wrong storage parameter!"));
       Serial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
-      return;
+      return -1;
     }
   }
   if(cmd =='w'){
-  if ( (newaddr >= '0' && newaddr <= '9') ||   // 1. Sprawdź, czy newaddr jest cyfrą (między '0' a 'f')
-    (newaddr >= 'a' && newaddr <= 'f') ||   // 2. LUB czy jest literą 'x'
-    (newaddr == 'x' || 'p') ){
+  if ( (newaddr >= '0' && newaddr <= '9') ||   // 1. check if newaddr is a digit (between '0' and 'f')
+    (newaddr >= 'a' && newaddr <= 'f') ||   
+    (newaddr == 'x' || 'p') ){ // 2. OR if it is letter 'x' or 'p' (no change)
     //correct command
   }
   else{
     Serial.println(F("ERROR! Wrong new addres parameter!"));
-    return;
+    return -1;
   }
   if(updateEEPROM != 'u' && updateEEPROM != 'i'){
     Serial.println(F("ERROR! Wrong update Eeprom parameter!"));
-    return;
+    return -1;
   }
   }
   clearSerialBuffer();
-  // check address
-  if(addr == 'x'){
+  if(addr == 'x'){// check available address
     for (uint8_t i = 0; i < 16; i++) {
           if(device_present[i] == true) {
             slave_address = i;
-            //Serial.print(slave_address);
+            //Serial.print(slave_address); // debug
             break;
           }
     }
   } 
   else slave_address = hexCharToInt(addr);
-    //Check for a valid slave address
-    if (device_present[slave_address] == false)
-    {
-      Serial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
-      return;
-    }
-    else {
-      //PrintHex8(slave_address); // pozniej zakomentowac 
-      //Serial.println();
-    }
-    if(cmd=='w'){
-  if(newaddr == 'x'){
-    new_int_addr = slave_address;
-    change_address = true;
-    //Serial.print(F("New slave address same like current slave address: "));
-    //Serial.print(new_int_addr);
-  } 
-  else if (newaddr == 'p'){
-    //Serial.print(F("Brak zmiany adresu: "));
-    change_address = false;
-  } 
-  else {
-    change_address = true;
-    new_int_addr = hexCharToInt(newaddr);
-    //Serial.print(F("New slave address: "));  
-    //Serial.print(new_int_addr);
+  //Check for a valid slave address
+  if (device_present[slave_address] == false)
+  {
+    Serial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
+    return -1;
   }
-    if (eraseChip(memType) == 0) {
-     Serial.println(F("Done erasing!"));
-    } else {
-      Serial.println(F("Erasing did not complete correctly!"));
+  else {
+    //PrintHex8(slave_address); // debug
+    //Serial.println(); // debug
+  }
+  if(cmd=='w'){
+    if(newaddr == 'x'){
+      new_int_addr = slave_address;
+      change_address = true;
+      //Serial.print(F("New slave address same like current slave address: ")); // Display for user, comment for final version to avoid unnecessary output
+      //Serial.print(new_int_addr); 
+    } 
+    else if (newaddr == 'p'){
+      //Serial.print(F("Brak zmiany adresu: ")); // Display for user, comment for final version to avoid unnecessary output
+      change_address = false;
+    } 
+    else {
+      change_address = true;
+      new_int_addr = hexCharToInt(newaddr);
+      //Serial.print(F("New slave address: "));  // Display for user, comment for final version to avoid unnecessary output
+      //Serial.print(new_int_addr); 
     }
-    ping();
-    sprawdzenie=writeChip(memType, source, storage, updateEEPROM, new_int_addr); 
-    if (sprawdzenie== 0) {
-    //if (writeChip(memType, source, storage, updateEEPROM, new_int_addr)== 0) {
-      // Serial.println(F("Done writing!"));
-      Serial.println(F("OK"));
-    } else {
-      Serial.println(F("E"));
-      //Serial.println(F("Writing did not complete correctly!"));
-    }
-    //Serial.println(sprawdzenie);
+      if (eraseChip(memType) == 0) {
+        Serial.println(F("Done erasing!"));
+      } else {
+        Serial.println(F("Erasing did not complete correctly!"));
+      }
+      ping();
+      writeChip(memType, source, storage, updateEEPROM, new_int_addr);
+      return readProgram(memType, 15, 'g', storage);
   }
   else if (cmd =='r'){
     Serial.println(F("Reading chip!"));
-    sprawdzenie=readProgram(memType, 16, source, storage);
-    // Serial.println(F("Done Reading!"));
+    return readProgram(memType, 16, source, storage);
   }
   else if (cmd =='e'){
     Serial.println(F("Erasing chip!"));
-    sprawdzenie=eraseChip(memType);
+    return eraseChip(memType);
   }
 }
 char select_mode(){
@@ -183,7 +177,6 @@ char select_mode(){
     if (Serial.available() > 0) {
       char firstChar = Serial.read();
       if (firstChar == 'a' || firstChar == 'A') {
-        //Serial.println(F("Automatic Write Mode Selected"));
         clearSerialBuffer();
         return 'a';
       }

@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include "globals.h"
-
+#include <SoftwareSerial.h>
 
 // Store nvmData in PROGMEM to save on RAM
 const char nvmString0[]  PROGMEM = "00000000000000000000000000000000";
@@ -81,5 +81,7 @@ bool device_present[16] = {false};
 char wybor=0; // wybor trybu
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false; // flaga zmiany adresu
-int sprawdzenie=0; // sprawdzanie wyniku writeChip
 uint8_t CRC8fromSerial = 0; // wynik CRC-8
+uint16_t offsetAddress = 0; // offset do zapisu nowego adresu
+// RX, TX
+SoftwareSerial mySerial(10, 11);

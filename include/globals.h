@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <SoftwareSerial.h>
 #define NVM_CONFIG 0x02
 #define EEPROM_CONFIG 0x03
 #define VDD 2 // GreenPAK VDD
@@ -51,5 +52,7 @@ extern bool device_present[16];
 extern char wybor; // wybor trybu
 extern uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 extern bool change_address; // flaga zmiany adresu
-extern int sprawdzenie; // sprawdzanie wyniku writeChip
 extern uint8_t CRC8fromSerial; // wynik CRC-8
+extern uint16_t offsetAddress; // offset do zapisu nowego adresu
+// RX, TX
+extern SoftwareSerial mySerial;

@@ -1,17 +1,19 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <EEPROM.h>
+#include <SoftwareSerial.h>
 #include "globals.h"
 #include "menu.h"
 #include "automatic.h"
 #include "memory.h"
 #include "utils.h"
-
-
+// RX, TX
+//SoftwareSerial mySerial(10, 11);
 ////////////////////////////////////////////////////////////////////////////////
 // setup 
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
+  //mySerial.begin(9600);    // start komunikacji na SoftwareSerial
   Wire.begin(); // join i2c bus (address optional for master)
   Wire.setClock(400000);
   Serial.begin(115200);
@@ -39,6 +41,8 @@ void loop() {
   }
   else
   {
+  delay(20);
+  clearSerialBuffer();
   char selection = query(1);
 
   switch (selection)
@@ -115,14 +119,15 @@ void loop() {
           }
 
           ping();
-          sprawdzenie=writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
+          writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
+          //sprawdzenie=writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
           //Serial.println(F("Sprawdzam wartosc writa"));
           //Serial.println(sprawdzenie);
-          if (sprawdzenie== 0) {
+          //if (sprawdzenie== 0) {
             // Serial.println(F("Done writing!"));
-          } else {
-            Serial.println(F("Writing did not complete correctly!"));
-          }
+          //} else {
+          ///  Serial.println(F("Writing did not complete correctly!"));
+          //}
 
         ping();
 
@@ -140,6 +145,7 @@ void loop() {
         break;
     default:
         clearSerialBuffer();
+        Serial.println(selection);
         Serial.println(F("Invalid selection. You did not enter \"r\", \"e\", \"w\", \"p\", \"a\"."));
         break;
   }

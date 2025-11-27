@@ -179,7 +179,7 @@ char query(uint8_t which_menu) {
 switch (which_menu)
 {
 case 1:
-  Serial.println(F("\nMENU: r = read, e = erase, w = write, p = ping"));
+  Serial.println(F("\nMENU: r = read, e = erase, w = write, p = ping, a = automatic mode"));
   break;
 case 2:
   Serial.println(F("Submit slave address, 0-F:"));
