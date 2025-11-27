@@ -11,10 +11,10 @@ char requestSlaveAddress() {
   ping();
 
   while(1) {
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     char mySlaveAddress = query(2);
     if (mySlaveAddress=='q'){
-      clearSerialBuffer();
+      clearSerialmySerialBuffer();
       Serial.println(F("Back to main menu"));
       return 'q';
     } 
@@ -39,7 +39,7 @@ char requestSlaveAddress() {
 char requestNVMorEeprom() {
   while (1)
   {
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     char selection = query(3);
 
     switch (selection)
@@ -54,7 +54,7 @@ char requestNVMorEeprom() {
           return 'e';
       case 'q':
           Serial.println(F("Back to main menu"));
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           return 'q';
       default:
           Serial.println(F("Invalid selection. You did not enter \"n\" or \"e\"."));
@@ -64,7 +64,7 @@ char requestNVMorEeprom() {
 }
 char requestGPAKorArduino(){
   while(1){
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     char selection = query(8);
 
     switch (selection){
@@ -78,7 +78,7 @@ char requestGPAKorArduino(){
       return 'a';
       case 'q':
         Serial.println(F("Back to main menu"));
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
       return 'q';
       default:
         Serial.println(F("Invalid selection. You did not enter \"g\" \"a\" ."));
@@ -107,7 +107,7 @@ char requestARDU_EEPROMorFLASH() {
         mem_choice = 'f';
         break;
     default:
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         Serial.println(F("Invalid selection. You did not enter \"a\" or \"f\"."));
         continue;
   }
@@ -121,25 +121,25 @@ char requestARDU_EEPROMorFLASH() {
 char requestSERIALorMEM() {
   while (1)
   {
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     char selection = query(4);
     switch (selection)
     {
       case 's':
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           Serial.println(F("SERIAL"));
           return 's';
       case 'm':
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           Serial.println(F("MEMORY"));
           return 'm';
       case 'q' :
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           Serial.println(F("Back to main menu"));
           return 'q';
           
       default:
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           Serial.println(F("Invalid selection. You did not enter \"s\" or \"m\"."));
           continue;
     }
@@ -151,7 +151,7 @@ char requestSERIALorMEM() {
 char requestUpdateEEPROM() {
   while (1)
   {
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     char selection = query(6);
 
     switch (selection)

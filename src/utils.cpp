@@ -25,7 +25,7 @@ uint8_t calculateCRC8(uint8_t *data, size_t length) {
 void PrintHex8(uint8_t data) {
   if (data < 0x10) {
     Serial.print(F("0"));
-    
+
   }
   Serial.print(data, HEX);
 }
@@ -41,8 +41,13 @@ int hexCharToInt(char c) {
 ////////////////////////////////////////////////////////////////////////////////
 // Clear Serial Buffer
 //////////////////////////////////////////////////////////////////////////////
-void clearSerialBuffer() {
+void clearSerialmySerialBuffer() {
   while (Serial.available()>0) {
     Serial.read();
   }
+  while (mySerial.available()>0)
+  {
+    mySerial.read();
+  }
+  
 }

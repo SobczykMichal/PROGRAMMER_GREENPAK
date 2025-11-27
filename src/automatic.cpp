@@ -16,7 +16,13 @@ int automatic_mode() {
   while (index < 7) {
     if (Serial.available() > 0 || mySerial.available() > 0) {
       
-      char c = Serial.read();
+      char c=0;
+      if(Serial.available() > 0){
+        c = Serial.read();
+      }
+      else if(mySerial.available() > 0){
+        c = mySerial.read();
+      }
       command[index] = c;
       index++;
       //Serial.println(command[index]); // Debug: print each received character
@@ -27,7 +33,7 @@ int automatic_mode() {
       else{
         if(command[0]=='m'){
           wybor='m'; // go to manual mode
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           return 0;
         }
         else if(command[0]=='e' && index ==3){
@@ -39,13 +45,13 @@ int automatic_mode() {
         else if (command[0] != 'm' && command[0] != 'e' && command[0] != 'r' && command[0] != 'w'){
           Serial.println(F("ERROR! Wrong first command!"));
           index=0;
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           return -1;
         }
       }
     }
   }
-  clearSerialBuffer();
+  clearSerialmySerialBuffer();
   // Parse command
   char cmd = command[0];
   char addr = command[1];
@@ -73,31 +79,38 @@ int automatic_mode() {
      }
      else{
       Serial.println(F("ERROR! Wrong addres parameter!"));
+      mySerial.println(F("ERROR! Wrong addres parameter!"));
       return -1;
      }
   if(memType!= 'n' && memType!='e'){
     Serial.println(F("ERROR! Wrong memory type parameter!"));
+    mySerial.println(F("ERROR! Wrong memory type parameter!"));
     return -1;
   }
   if (cmd == 'w')
   {
     if (source != 's' && source != 'm'){
       Serial.println(F("ERROR! Wrong source parameter!"));
+      mySerial.println(F("ERROR! Wrong source parameter!"));
       return -1;
     }
     if (storage != 'a' && storage != 'f'){
       Serial.println(F("ERROR! Wrong storage parameter!"));
+      mySerial.println(F("ERROR! Wrong storage parameter!"));
       return -1;
     }
   }
   if (cmd == 'r' ){
     if (source != 'g' && source != 'a'){
       Serial.println(F("ERROR! Wrong source parameter!"));
+      mySerial.println(F("ERROR! Wrong source parameter!"));
       return -1;
     }
     if (storage != 'a' && storage != 'f'){
       Serial.println(F("ERROR! Wrong storage parameter!"));
       Serial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
+      mySerial.println(F("ERROR! Wrong storage parameter!"));
+      mySerial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
       return -1;
     }
   }
@@ -109,14 +122,16 @@ int automatic_mode() {
   }
   else{
     Serial.println(F("ERROR! Wrong new addres parameter!"));
+    mySerial.println(F("ERROR! Wrong new addres parameter!"));
     return -1;
   }
   if(updateEEPROM != 'u' && updateEEPROM != 'i'){
     Serial.println(F("ERROR! Wrong update Eeprom parameter!"));
+    mySerial.println(F("ERROR! Wrong update Eeprom parameter!"));
     return -1;
   }
   }
-  clearSerialBuffer();
+  clearSerialmySerialBuffer();
   if(addr == 'x'){// check available address
     for (uint8_t i = 0; i < 16; i++) {
           if(device_present[i] == true) {
@@ -131,6 +146,7 @@ int automatic_mode() {
   if (device_present[slave_address] == false)
   {
     Serial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
+    mySerial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
     return -1;
   }
   else {
@@ -156,8 +172,10 @@ int automatic_mode() {
     }
       if (eraseChip(memType) == 0) {
         Serial.println(F("Done erasing!"));
+        mySerial.println(F("Done erasing!"));
       } else {
         Serial.println(F("Erasing did not complete correctly!"));
+        mySerial.println(F("Erasing did not complete correctly!"));
       }
       ping();
       writeChip(memType, source, storage, updateEEPROM, new_int_addr);
@@ -165,29 +183,37 @@ int automatic_mode() {
   }
   else if (cmd =='r'){
     Serial.println(F("Reading chip!"));
+    mySerial.println(F("Reading chip!"));
     return readProgram(memType, 16, source, storage);
   }
   else if (cmd =='e'){
     Serial.println(F("Erasing chip!"));
+    mySerial.println(F("Erasing chip!"));
     return eraseChip(memType);
   }
 }
 char select_mode(){
     while (1) {
-    if (Serial.available() > 0) {
-      char firstChar = Serial.read();
+    if (Serial.available() > 0 || mySerial.available() > 0) {
+      char firstChar =0;
+      if(Serial.available() > 0){
+        firstChar = Serial.read();
+      }
+      else if(mySerial.available() > 0){
+       firstChar = mySerial.read();
+      }
       if (firstChar == 'a' || firstChar == 'A') {
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         return 'a';
       }
       else if (firstChar == 'm' || firstChar == 'M') {
         Serial.println(F("Manual Mode Selected"));
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         return 'm';
       }
       else {
         Serial.println(F("Invalid selection. You did not enter \"a\" or \"m\"."));
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         continue;
       }
     }

@@ -7,13 +7,11 @@
 #include "automatic.h"
 #include "memory.h"
 #include "utils.h"
-// RX, TX
-//SoftwareSerial mySerial(10, 11);
 ////////////////////////////////////////////////////////////////////////////////
 // setup 
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  //mySerial.begin(9600);    // start komunikacji na SoftwareSerial
+  mySerial.begin(9600);    // start komunikacji na SoftwareSerial
   Wire.begin(); // join i2c bus (address optional for master)
   Wire.setClock(400000);
   Serial.begin(115200);
@@ -34,7 +32,7 @@ void loop() {
   char ARDU_FLASHorEEPROM = 0;
   char updateSelection = 0;
   char GPorARDU=0;
-  clearSerialBuffer();
+  clearSerialmySerialBuffer();
   if(wybor == 'a'){
     ping();
     automatic_mode();
@@ -42,33 +40,34 @@ void loop() {
   else
   {
   delay(20);
-  clearSerialBuffer();
+  clearSerialmySerialBuffer();
   char selection = query(1);
 
   switch (selection)
   {
     case 'r': 
         Serial.println(F("Reading chip!"));
+        mySerial.println(F("Reading chip!")); // Informacja na SoftwareSerial
         if(requestSlaveAddress() =='q') break; 
         NVMorEEPROM = requestNVMorEeprom();// wykonuj to jesli request inny niz q
         if (NVMorEEPROM == 'q'){
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           break;
         }
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         GPorARDU = requestGPAKorArduino();
         if (GPorARDU == 'q'){
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           break;
         }
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         if(GPorARDU == 'a')ARDU_FLASHorEEPROM = requestARDU_EEPROMorFLASH();
         else ARDU_FLASHorEEPROM = 0; //jeśli GreenPAK to pomin
         if (ARDU_FLASHorEEPROM == 'q'){
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           break;
         }
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         readProgram(NVMorEEPROM, 16, GPorARDU, ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!"));
         break;
@@ -79,7 +78,7 @@ void loop() {
         }
         NVMorEEPROM = requestNVMorEeprom(); // wykonuj to jesli request inny niz q
         if (NVMorEEPROM == 'q'){
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           break;
         }
         else{
@@ -95,22 +94,21 @@ void loop() {
         break;
     case 'w': 
         Serial.println(F("Writing Chip!"));
-
           if(requestSlaveAddress()=='q') break;;
           NVMorEEPROM = requestNVMorEeprom();
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           if(NVMorEEPROM=='q') break;
           SERIALorMEM = requestSERIALorMEM();
-          clearSerialBuffer();
+          clearSerialmySerialBuffer();
           if(SERIALorMEM=='q') break;
           if(SERIALorMEM == 'm'){
             ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
-            clearSerialBuffer();
+            clearSerialmySerialBuffer();
             updateSelection='i';
           }
           if(SERIALorMEM == 's'){
             updateSelection = requestUpdateEEPROM();
-            clearSerialBuffer();
+            clearSerialmySerialBuffer();
           }       
           if (eraseChip(NVMorEEPROM) == 0) {
             // Serial.println(F("Done erasing!"));
@@ -141,10 +139,10 @@ void loop() {
         break;
     case 'a':
         wybor='a';
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         break;
     default:
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         Serial.println(selection);
         Serial.println(F("Invalid selection. You did not enter \"r\", \"e\", \"w\", \"p\", \"a\"."));
         break;

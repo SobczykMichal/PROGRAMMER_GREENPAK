@@ -60,23 +60,25 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
           PrintHex8(Wire.read());
         }
       }
-      if (CheckOrRead == 16) Serial.println();
+      if (CheckOrRead == 16){
+        Serial.println();
+      } 
     }
     if (CheckOrRead == 15){
       if(checkState){
         Serial.println(F("OK"));
+        mySerial.println(F("OK"));
         return 0;
       }
       else {
         Serial.println(F("E"));
+        mySerial.println(F("E"));
         return -1;
       }
     }
   }
   else if(GPAKorArdu == 'a'){
     if (ARDU_FLASHorEEPROM== 'a'){
-
-
       for (size_t i = 0; i < 16; i++)
       {
         for (size_t j = 0; j < 16; j++)
@@ -134,15 +136,18 @@ int eraseChip(char NVMorEEPROM) {
     }
     Wire.beginTransmission(control_code);
     Wire.write(0xE3);
-
     if (NVMorEEPROM == 'n')
     {
-      if (wybor == 'm') Serial.print(F("NVM ")); //print only in manual mode
+      if (wybor == 'm'){
+        Serial.print(F("NVM ")); //print only in manual mode
+      } 
       Wire.write(0x80 | i);
     }
     else if (NVMorEEPROM == 'e')
     {
-      if (wybor == 'm') Serial.print(F("EEPROM ")); //print only in manual mode
+      if (wybor == 'm'){
+        Serial.print(F("EEPROM ")); //print only in manual mode
+      } 
       Wire.write(0x90 | i);
     }
     
@@ -165,12 +170,15 @@ int eraseChip(char NVMorEEPROM) {
     {
       return -1;
     } else {
-      if(wybor == 'm') Serial.print(F("ready ")); // print only in manual mode
+      if(wybor == 'm'){
+        Serial.print(F("ready ")); // print only in manual mode
+      } 
       delay(100);
     }
-    if(wybor == 'm') Serial.println(); // print only in manual mode 
+    if(wybor == 'm'){
+      Serial.println(); // print only in manual mode
+    }  
   }
-
   powercycle();
   return 0;
 }
@@ -212,6 +220,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   }
   else{
     Serial.println(F("ERROR! WRONG PARAMETER!"));
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
     return -1;
   }
 
@@ -225,7 +234,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     //if(wybor == 0) Serial.println(F("Getting data from SERIAL input")); // print only in manual mode
     Serial.println(F("Getting data from SERIAL input")); // print only in manual mode
     data_from_SERIAL = true;
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
   }
   else if (SERIALorMEM == 'm')
   {
@@ -296,7 +305,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     Serial.print(F("CRC8: "));
     Serial.println(CRC8fromSerial, HEX);
     }
-    clearSerialBuffer();
+    clearSerialmySerialBuffer();
     // Serial.println(F("New NVM data:")); // Display for user
     if(data_from_MEMORY)
     {
@@ -350,7 +359,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     {
       while(1) {
         delay(10);
-        clearSerialBuffer();
+        clearSerialmySerialBuffer();
         int temp=0;
         if(wybor == 'm'){
         char newSA = query(7);
