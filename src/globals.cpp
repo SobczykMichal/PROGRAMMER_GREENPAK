@@ -83,6 +83,6 @@ uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false; // flaga zmiany adresu
 uint8_t CRC8fromSerial = 0; // wynik CRC-8
 uint16_t offsetAddress = 0; // offset do zapisu nowego adresu
-int8_t
+int8_t lastOperationStatus = 0; // status ostatniej operacji
 // RX, TX
 SoftwareSerial mySerial(11, 12);

@@ -18,8 +18,8 @@ void setup() {
   pinMode(VDD, OUTPUT);  // This will be the GreenPAK's VDD
   digitalWrite(VDD, HIGH);
   delay(100);
-  Serial.println(F("Set mode: a = automatic writing, m = manual"));
-  wybor=select_mode();
+  Serial.println(F("Set mode: a = automatic writing, m = manual.First opening in automatic mode."));
+  wybor='a'; //  default mode is automatic
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +35,8 @@ void loop() {
   clearSerialmySerialBuffer();
   if(wybor == 'a'){
     ping();
-    automatic_mode();
+    lastOperationStatus= automatic_mode();
+    StatusOperation(lastOperationStatus);
   }
   else
   {
@@ -98,11 +99,13 @@ void loop() {
           NVMorEEPROM = requestNVMorEeprom();
           clearSerialmySerialBuffer();
           if(NVMorEEPROM=='q') break;
-          SERIALorMEM = requestSERIALorMEM();
-          clearSerialmySerialBuffer();
-          if(SERIALorMEM=='q') break;
+          //SERIALorMEM = requestSERIALorMEM();
+          //clearSerialmySerialBuffer();
+          //if(SERIALorMEM=='q') break;
+          if(requestSERIALorMEM()=='q') break;
           if(SERIALorMEM == 'm'){
-            ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
+            //ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
+            if(requestARDU_EEPROMorFLASH()=='q') break;
             clearSerialmySerialBuffer();
             updateSelection='i';
           }
@@ -147,5 +150,6 @@ void loop() {
         Serial.println(F("Invalid selection. You did not enter \"r\", \"e\", \"w\", \"p\", \"a\"."));
         break;
   }
+    StatusOperation(lastOperationStatus);
   }
 }

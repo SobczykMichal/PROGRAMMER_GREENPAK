@@ -54,5 +54,6 @@ extern uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtó
 extern bool change_address; // flaga zmiany adresu
 extern uint8_t CRC8fromSerial; // wynik CRC-8
 extern uint16_t offsetAddress; // offset do zapisu nowego adresu
+extern int8_t lastOperationStatus; // status ostatniej operacji
 // RX, TX
 extern SoftwareSerial mySerial;

@@ -213,5 +213,65 @@ default:
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-// select mode
+// StatusOperation
 ////////////////////////////////////////////////////////////////////////////////
+void StatusOperation(int8_t status){
+  if(status==0){
+    Serial.println(F("Operation completed successfully."));
+    mySerial.println(F("OK"));
+  }
+  else if(status==-1){
+    Serial.println(F("Operation failed due to communication error."));
+    mySerial.println(F("E1"));
+  }
+  else if(status==-2){
+    Serial.println(F("Operation failed due to invalid address."));
+    mySerial.println(F("E2"));
+  }
+  else if(status==-3){
+    Serial.println(F("Operation failed due to invalid memory type."));
+    mySerial.println(F("E3"));
+  }
+  else if(status==-4){
+    Serial.println(F("Operation failed due to invalid source type."));
+    mySerial.println(F("E4"));
+  }
+  else if(status==-5){
+    Serial.println(F("Operation failed due to invalid storage type."));
+    mySerial.println(F("E5"));
+  }
+  else if(status==-6){
+    Serial.println(F("Operation failed due to invalid source type."));
+    mySerial.println(F("E6"));
+  }
+  else if(status==-7){
+    Serial.println(F("Operation failed due to error updating Arduino EEPROM."));
+    mySerial.println(F("E15"));
+  }  
+  else if(status==-8){
+    Serial.println(F("Operation failed due to invalid new address."));
+    mySerial.println(F("E8"));
+  }
+  else if(status==-9){
+    Serial.println(F("Operation failed due to invalid update EEPROM parameter."));
+    mySerial.println(F("E9"));
+  }
+  else if(status==-10){
+    Serial.println(F("Erasing failed"));
+    mySerial.println(F("E10"));
+  }
+  else if(status==-11){
+    Serial.println(F("Error reading from GreenPAK. Different data than buffer."));
+    mySerial.println(F("E11"));
+  }
+    else if(status==-12){
+    Serial.println(F("Operation failed due to error during programming or ACK."));
+    mySerial.println(F("E14"));
+  }
+  else if(status==-13){
+    Serial.println(F("Operation failed. Wrong parameter or something else."));
+    mySerial.println(F("E13"));
+  }
+
+
+}
