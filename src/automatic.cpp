@@ -12,8 +12,35 @@ int automatic_mode() {
   //Serial.println(F("Enter full command e. g. w1nma2u"));
   //Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY/SERIAL, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
 
-  // Czekaj aż odbierzesz dokładnie 7 znaków
+  // Czekaj aż odbierzesz dokładnie 7 znaków lub nacisniesz przycisk
   while (index < 7) {
+
+    // --- Obsługa przycisku z programowaniem NVM z eepromu arduino ---
+    int reading = digitalRead(buttonPin);
+    if (reading != lastStableState) {
+      lastChangeTime = millis();
+    }
+    if ((millis() - lastChangeTime) > debounceDelay) {
+      if (reading != currentState) {
+        currentState = reading;
+        if (currentState == LOW) {
+          Serial.println("Przycisk wciśnięty -> tryb automatyczny");
+          // Znajdź pierwszy dostępny adres
+          for (uint8_t i = 0; i < 16; i++) {
+            if (device_present[i]) {
+              slave_address = i;
+              break;
+            }
+          }
+          eraseChip('n');
+          change_address=false;
+           return writeChip('n', 'm', 'a', 'i',0);
+        }
+      }
+    }
+    lastStableState = reading;
+    // ------------------------------------------------------------
+
     if (Serial.available() > 0 || mySerial.available() > 0) {
       
       char c=0;
@@ -192,5 +219,10 @@ int automatic_mode() {
     Serial.println(F("Erasing chip!"));
     mySerial.println(F("Erasing chip!"));
     return eraseChip(memType);
+  }
+  else{
+    //Serial.println(F("ERROR! Wrong first command!"));
+    //mySerial.println(F("ERROR! Wrong first command!"));
+    return -13;
   }
 }

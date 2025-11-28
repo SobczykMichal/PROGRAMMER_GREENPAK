@@ -198,7 +198,6 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   bool  data_from_MEMORY = false;
   bool  data_from_ARDUINO_EEPROM = false;
   bool  data_from_ARDUINO_FLASH = false;
-
   if (NVMorEEPROM == 'n')
   {
     // Serial.println(F("Writing NVM")); // Display for user
@@ -420,15 +419,16 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
         if(wybor == 'm') Serial.print(F(" ack ")); // print only in manual mode
       } else {
         if(wybor == 'm'){ // print only in manual mode
-          //Serial.print(F(" nack\n"));
+          Serial.print(F(" nack\n"));
           //Serial.println(F("Oh No! Something went wrong while programming!"));
         }
+
           return -12;
       }
 
       if (ackPolling(addressForAckPolling) == -1)
       {
-       // Serial.println(F("Oh No! Something went wrong with ack polling!"));
+        Serial.println(F("Oh No! Something went wrong with ack polling!"));
         return -12;
       } else {
         if(wybor == 'm') Serial.println(F("ready")); // print only in manual mode

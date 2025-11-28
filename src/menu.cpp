@@ -246,7 +246,7 @@ void StatusOperation(int8_t status){
   }
   else if(status==-7){
     Serial.println(F("Operation failed due to error updating Arduino EEPROM."));
-    mySerial.println(F("E15"));
+    mySerial.println(F("E7"));
   }  
   else if(status==-8){
     Serial.println(F("Operation failed due to invalid new address."));
@@ -266,7 +266,7 @@ void StatusOperation(int8_t status){
   }
     else if(status==-12){
     Serial.println(F("Operation failed due to error during programming or ACK."));
-    mySerial.println(F("E14"));
+    mySerial.println(F("E12"));
   }
   else if(status==-13){
     Serial.println(F("Operation failed. Wrong parameter or something else."));

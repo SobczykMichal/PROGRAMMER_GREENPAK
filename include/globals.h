@@ -55,5 +55,11 @@ extern bool change_address; // flaga zmiany adresu
 extern uint8_t CRC8fromSerial; // wynik CRC-8
 extern uint16_t offsetAddress; // offset do zapisu nowego adresu
 extern int8_t lastOperationStatus; // status ostatniej operacji
+extern uint8_t buttonPin; // pin przycisku
+extern unsigned long debounceDelay; // czas w ms
+extern int lastStableState;       // ostatni stabilny stan
+extern int currentState;
+extern unsigned long lastChangeTime;
+
 // RX, TX
 extern SoftwareSerial mySerial;
