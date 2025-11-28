@@ -62,7 +62,7 @@ int automatic_mode() {
       }
       else{
         if(command[0]=='m'){
-          wybor='m'; // go to manual mode
+          selectionMode='m'; // go to manual mode
           clearSerialmySerialBuffer();
           return 0;
         }

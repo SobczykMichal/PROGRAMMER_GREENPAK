@@ -78,7 +78,7 @@ extern const char* const eepromString[16] PROGMEM = {
 
 int slave_address = 0x00;
 bool device_present[16] = {false}; 
-char wybor=0; // wybor trybu
+char selectionMode=0; // wybor trybu
 uint8_t buffer_seria[256];  // Bufor na 256 znaków hex (czyli 128 bajtów)
 bool change_address = false; // flaga zmiany adresu
 uint8_t CRC8fromSerial = 0; // wynik CRC-8

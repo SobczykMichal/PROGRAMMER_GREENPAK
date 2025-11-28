@@ -20,7 +20,7 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP); //button pin initialization
   delay(100);
   Serial.println(F("Set mode: a = automatic writing, m = manual.First opening in automatic mode."));
-  wybor='a'; //  default mode is automatic
+  selectionMode='a'; //  default mode is automatic
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ void loop() {
   char updateSelection = 0;
   char GPorARDU=0;
   clearSerialmySerialBuffer();
-  if(wybor == 'a'){ //automatic mode
+  if(selectionMode == 'a'){ //automatic mode
     ping();
     lastOperationStatus= automatic_mode();
     StatusOperation(lastOperationStatus);
@@ -134,7 +134,7 @@ void loop() {
         // Serial.println(F("Done Pinging!")); // Display for user
         break;
     case 'a':
-        wybor='a';
+        selectionMode='a';
         clearSerialmySerialBuffer();
         break;
     default:
