@@ -101,13 +101,12 @@ void loop() {
           NVMorEEPROM = requestNVMorEeprom();
           clearSerialmySerialBuffer();
           if(NVMorEEPROM=='q') break;
-          //SERIALorMEM = requestSERIALorMEM();
-          //clearSerialmySerialBuffer();
-          //if(SERIALorMEM=='q') break;
-          if(requestSERIALorMEM()=='q') break;
+          SERIALorMEM = requestSERIALorMEM();
+          clearSerialmySerialBuffer();
+          if(SERIALorMEM == 'q') break;       
           if(SERIALorMEM == 'm'){
-            //ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
-            if(requestARDU_EEPROMorFLASH()=='q') break;
+            ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
+            if(ARDU_FLASHorEEPROM=='q') break;
             clearSerialmySerialBuffer();
             updateSelection='i';
           }
@@ -124,7 +123,6 @@ void loop() {
         ping();
         lastOperationStatus =  writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
         ping();
-
         lastOperationStatus = readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!")); // Display for user
         break;

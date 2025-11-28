@@ -231,6 +231,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     addressForAckPolling = slave_address << 3;
   }
   else{
+    Serial.println(F("Pierwszy, przy nvm or eeprom"));
     Serial.println(F("ERROR! WRONG PARAMETER!"));
     return -9;
   }
@@ -261,12 +262,14 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
       data_from_ARDUINO_FLASH = true;
     }
     else{
+      Serial.println("2 error, przy a eeprom lub f flash");
     Serial.println(F("ERROR! WRONG PARAMETER!"));
     return -9;
     }
   }
   else{
-    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    Serial.println(F("3 error to smao"));
+    Serial.println(F("ERROR! WRONG PARAMETER!")); 
     return -9;
   }
   if (data_from_SERIAL)
@@ -553,6 +556,7 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
       success = true;
   }
   else{
+    Serial.println(F("4 error przy save to eeprom"));
     Serial.println(F("ERROR! WRONG PARAMETER!"));
     success=false;
   }
