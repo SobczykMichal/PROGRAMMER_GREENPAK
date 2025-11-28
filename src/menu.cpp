@@ -7,6 +7,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // request slave address 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to request slave address
+   returns 'q' if user wants to quit to main menu
+   otherwise sets global slave_address variable and returns 0
+*/
 char requestSlaveAddress() {
   ping();
 
@@ -36,6 +40,9 @@ char requestSlaveAddress() {
 ////////////////////////////////////////////////////////////////////////////////
 // request NVM or EEPROM 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to request NVM or EEPROM
+   returns 'n' for NVM or 'e' for EEPROM
+*/
 char requestNVMorEeprom() {
   while (1)
   {
@@ -62,6 +69,12 @@ char requestNVMorEeprom() {
     }
   }
 }
+////////////////////////////////////////////////////////////////////////////////
+//// request GPAK or ARDUINO
+////////////////////////////////////////////////////////////////////////////////
+/* Function to request GreenPAK or Arduino
+   returns 'g' for GREENPAK or 'a' for ARDUINO
+*/
 char requestGPAKorArduino(){
   while(1){
     clearSerialmySerialBuffer();
@@ -89,6 +102,9 @@ char requestGPAKorArduino(){
 ////////////////////////////////////////////////////////////////////////////////
 // request ARDUINO EEPROM or FLASH
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to request Arduino memory type
+   returns 'a' for ARDUINO EEPROM or 'f' for FLASH
+*/
 char requestARDU_EEPROMorFLASH() {
   char mem_selection;
   char mem_choice = 0; 
@@ -118,6 +134,9 @@ char requestARDU_EEPROMorFLASH() {
 ////////////////////////////////////////////////////////////////////////////////
 // request SERIAL or MEMORY
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to request data source type
+   returns 's' for SERIAL or 'm' for MEMORY
+*/
 char requestSERIALorMEM() {
   while (1)
   {
@@ -148,6 +167,9 @@ char requestSERIALorMEM() {
 ////////////////////////////////////////////////////////////////////////////////
 // request update EEPROM
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to request whether to update Arduino EEPROM
+   returns 'u' for update or 'i' for ignore
+*/
 char requestUpdateEEPROM() {
   while (1)
   {
@@ -174,6 +196,11 @@ char requestUpdateEEPROM() {
 ////////////////////////////////////////////////////////////////////////////////
 // query 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to display menu based on which_menu parameter
+   and wait for user input
+   which_menu: menu identifier to display
+   returns the character input by the user
+*/
 char query(uint8_t which_menu) {
   Serial.println();
 switch (which_menu)
@@ -215,6 +242,9 @@ default:
 ////////////////////////////////////////////////////////////////////////////////
 // StatusOperation
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to display status of the last operation
+   status: 0 for success, negative values for different errors
+*/
 void StatusOperation(int8_t status){
   if(status==0){
     Serial.println(F("Operation completed successfully."));
@@ -253,7 +283,7 @@ void StatusOperation(int8_t status){
     mySerial.println(F("E8"));
   }
   else if(status==-9){
-    Serial.println(F("Operation failed due to invalid update EEPROM parameter."));
+    Serial.println(F("Operation failed. Wrong parameter or something else."));
     mySerial.println(F("E9"));
   }
   else if(status==-10){
@@ -268,10 +298,4 @@ void StatusOperation(int8_t status){
     Serial.println(F("Operation failed due to error during programming or ACK."));
     mySerial.println(F("E12"));
   }
-  else if(status==-13){
-    Serial.println(F("Operation failed. Wrong parameter or something else."));
-    mySerial.println(F("E13"));
-  }
-
-
 }

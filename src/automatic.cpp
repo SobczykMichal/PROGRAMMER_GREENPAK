@@ -8,6 +8,11 @@ int automatic_mode() {
   char command[8]= {0}; // 7 znaków + null terminator
   uint8_t index = 0;
   uint8_t new_int_addr=0;
+  unsigned long debounceDelay = 100; // czas w ms
+  int lastStableState = HIGH;       // ostatni stabilny stan
+  int currentState;
+  unsigned long lastChangeTime = 0;
+
   ///// Display for user, comment for final version to avoid unnecessary output
   //Serial.println(F("Enter full command e. g. w1nma2u"));
   //Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY/SERIAL, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
@@ -24,8 +29,8 @@ int automatic_mode() {
       if (reading != currentState) {
         currentState = reading;
         if (currentState == LOW) {
-          Serial.println("Przycisk wciśnięty -> tryb automatyczny");
-          // Znajdź pierwszy dostępny adres
+          Serial.println("Button press -> automatic writing from Arduino EEPROM to GreenPak's NVM");
+          // First available device
           for (uint8_t i = 0; i < 16; i++) {
             if (device_present[i]) {
               slave_address = i;
@@ -34,14 +39,14 @@ int automatic_mode() {
           }
           eraseChip('n');
           change_address=false;
-           return writeChip('n', 'm', 'a', 'i',0);
+           return writeChip('n', 'm', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used
         }
       }
     }
     lastStableState = reading;
     // ------------------------------------------------------------
 
-    if (Serial.available() > 0 || mySerial.available() > 0) {
+    if (Serial.available() > 0 || mySerial.available() > 0) { // Check both Serial and mySerial
       
       char c=0;
       if(Serial.available() > 0){
@@ -52,8 +57,6 @@ int automatic_mode() {
       }
       command[index] = c;
       index++;
-      //Serial.println(command[index]); // Debug: print each received character
-      //delay(5);
       if (c == '\n' || c == '\r') {
       index--; // Ignore new line characters
       }
@@ -105,40 +108,26 @@ int automatic_mode() {
      (addr == 'x') ){ // 2. OR if it is letter 'x'
      }
      else{
-      //Serial.println(F("ERROR! Wrong addres parameter!"));
-      //mySerial.println(F("ERROR! Wrong addres parameter!"));
-      return -2;
+      return -2; // error invalid slave address
      }
   if(memType!= 'n' && memType!='e'){
-    //Serial.println(F("ERROR! Wrong memory type parameter!"));
-    //mySerial.println(F("ERROR! Wrong memory type parameter!"));
-    return -3;
+    return -3; // error invalid memory type
   }
   if (cmd == 'w')
   {
     if (source != 's' && source != 'm'){
-      //Serial.println(F("ERROR! Wrong source parameter!"));
-      //mySerial.println(F("ERROR! Wrong source parameter!"));
-      return -4;
+      return -4; // error invalid source parameter
     }
     if (storage != 'a' && storage != 'f'){
-      //Serial.println(F("ERROR! Wrong storage parameter!"));
-      //mySerial.println(F("ERROR! Wrong storage parameter!"));
-      return -5;
+      return -5; // error invalid storage parameter
     }
   }
   if (cmd == 'r' ){
     if (source != 'g' && source != 'a'){
-      //Serial.println(F("ERROR! Wrong source parameter!"));
-      //mySerial.println(F("ERROR! Wrong source parameter!"));
-      return -6;
+      return -6; // error invalid source parameter
     }
     if (storage != 'a' && storage != 'f'){
-     // Serial.println(F("ERROR! Wrong storage parameter!"));
-     // Serial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
-      //mySerial.println(F("ERROR! Wrong storage parameter!"));
-      //mySerial.println(F("ERROR! If source is GreenPAK, storage parameter is ignored but write 'a' or 'f'."));
-      return -7;
+      return -5; // error invalid storage parameter
     }
   }
   if(cmd =='w'){
@@ -148,14 +137,10 @@ int automatic_mode() {
     //correct command
   }
   else{
-    //Serial.println(F("ERROR! Wrong new addres parameter!"));
-   // mySerial.println(F("ERROR! Wrong new addres parameter!"));
-    return -8;
+    return -8; // error invalid new address
   }
   if(updateEEPROM != 'u' && updateEEPROM != 'i'){
-    //Serial.println(F("ERROR! Wrong update Eeprom parameter!"));
-   // mySerial.println(F("ERROR! Wrong update Eeprom parameter!"));
-    return -9;
+    return -7; // error invalid updateEEPROM parameter
   }
   }
   clearSerialmySerialBuffer();
@@ -172,9 +157,7 @@ int automatic_mode() {
   //Check for a valid slave address
   if (device_present[slave_address] == false)
   {
-    //Serial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
-   // mySerial.println(F("You entered an incorrect slave address. Submit slave address, 0-F: "));
-    return -2;
+    return -2; // error invalid slave address
   }
   else {
     //PrintHex8(slave_address); // debug
@@ -199,12 +182,11 @@ int automatic_mode() {
     }
       if (eraseChip(memType) == 0) {
         Serial.println(F("Done erasing!"));
-       // mySerial.println(F("Done erasing!"));
-       
+       // mySerial.println(F("Done erasing!")); //debug
       } else {
-        //Serial.println(F("Erasing did not complete correctly!"));
-        //mySerial.println(F("Erasing did not complete correctly!"));
-        return -10;
+        //Serial.println(F("Erasing did not complete correctly!")); // Display for user, comment for final version to avoid unnecessary output
+        //mySerial.println(F("Erasing did not complete correctly!")); 
+        return -10; // error erasing failed
       }
       ping();
       writeChip(memType, source, storage, updateEEPROM, new_int_addr);
@@ -221,8 +203,6 @@ int automatic_mode() {
     return eraseChip(memType);
   }
   else{
-    //Serial.println(F("ERROR! Wrong first command!"));
-    //mySerial.println(F("ERROR! Wrong first command!"));
-    return -13;
+    return -9; // error wrong command
   }
 }

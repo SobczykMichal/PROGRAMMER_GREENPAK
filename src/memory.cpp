@@ -7,9 +7,16 @@
 #include <EEPROM.h>
 #include <Wire.h>
 ////////////////////////////////////////////////////////////////////////////////
-// readChip 
+// readProgram
 ////////////////////////////////////////////////////////////////////////////////
-int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM) {
+/* Function to read data from GreenPAK NVM/EEPROM or from Arduino EEPROM/Flash
+   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+    CheckOrRead: 15 for check, 16 for read and print
+    GPAKorArdu: 'g' for GreenPAK, 'a' for Arduino
+    ARDU_FLASHorEEPROM: 'a' for Arduino EEPROM, 'f' for Arduino Flash
+    returns 0 if OK or -11 if data incorrect during checking
+*/
+int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM) { 
   int control_code = slave_address << 3;
   int index = 0;
   if (NVMorEEPROM == 'n')
@@ -23,7 +30,6 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
     control_code |= EEPROM_CONFIG;
   }
 
-  //for (uint8_t i = 0; i < 16; i++) {
   if((NVMorEEPROM == 'n' || NVMorEEPROM == 'e') && GPAKorArdu == 'g'){
     bool checkState=true;
     for (uint8_t i = 0; i < CheckOrRead; i++) {
@@ -42,7 +48,7 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
             continue;
           } 
           else{
-            /*Serial.println(F("Incorrect data! Blad na idneksie:"));
+            /*Serial.println(F("Incorrect data! Blad na idneksie:")); // debug
             Serial.println(index); // debug
             Serial.print(F("Wartosc greenpaka: ")); // debug
             PrintHex8(gpakVal); // debug
@@ -53,7 +59,6 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
             Serial.println();*/
             checkState=false;
             break;
-            //return -1;
           }  
         }
         if (CheckOrRead == 16){ // read and print
@@ -66,12 +71,12 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
     }
     if (CheckOrRead == 15){
       if(checkState){
-        //Serial.println(F("OK"));
+        //Serial.println(F("OK")); // debug
         //mySerial.println(F("OK"));
         return 0;
       }
       else {
-       //Serial.println(F("E"));
+       //Serial.println(F("E")); // debug
         //mySerial.println(F("E"));
         return -11;
       }
@@ -121,11 +126,11 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
 ////////////////////////////////////////////////////////////////////////////////
 // eraseChip 
 ////////////////////////////////////////////////////////////////////////////////
-int eraseChip(char NVMorEEPROM) {
-  /*
-  int control_code = slave_address << 3;
-  int addressForAckPolling = control_code;
+/* Function to erase GreenPAK NVM/EEPROM
+   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+   returns 0 if OK or -11 if something wrong during erasing
 */
+int eraseChip(char NVMorEEPROM) {
   uint8_t control_code = slave_address << 3;
   uint8_t addressForAckPolling = control_code;
 
@@ -187,7 +192,14 @@ int eraseChip(char NVMorEEPROM) {
 ////////////////////////////////////////////////////////////////////////////////
 // writeChip 
 ////////////////////////////////////////////////////////////////////////////////
-//int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM) {
+/* Function to write data to GreenPAK NVM/EEPROM
+   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+   SERIALorMEM: 's' for serial input, 'm' for memory input
+   ARDU_FLASHorEEPROM: 'a' for Arduino EEPROM, 'f' for Arduino Flash (only if SERIALorMEM='m')
+   updateSelection: 'u' for update EEPROM, 'i' for ignore update (only if NVMorEEPROM='e' and SERIALorMEM='s')
+   new_address: new slave address (0-15) if change_address=true
+   returns 0 if OK or -9 if wrong parameter or -7 if data incorrect during checking or -12 if something wrong during writing
+*/
 int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address) {
   uint8_t control_code = 0x00;
   uint8_t addressForAckPolling = 0x00;
@@ -220,7 +232,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
   }
   else{
     Serial.println(F("ERROR! WRONG PARAMETER!"));
-    return -13;
+    return -9;
   }
 
   if(wybor == 'm'){
@@ -250,12 +262,12 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     }
     else{
     Serial.println(F("ERROR! WRONG PARAMETER!"));
-    return -13;
+    return -9;
     }
   }
   else{
     Serial.println(F("ERROR! WRONG PARAMETER!"));
-    return -13;
+    return -9;
   }
   if (data_from_SERIAL)
   {
@@ -453,6 +465,9 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
 ////////////////////////////////////////////////////////////////////////////////
 // ping 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to ping all possible addresses (0-15) on the I2C bus
+   and mark which devices are present in device_present[] array
+*/
 void ping() {
   delay(100);
   for (uint8_t i = 0; i < 16; i++) {
@@ -476,6 +491,10 @@ void ping() {
 ////////////////////////////////////////////////////////////////////////////////
 // ack polling 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to perform ACK polling on the given address
+   addressForAckPolling: I2C address to poll
+   returns 0 if ACK received or -12 if timeout occurs
+*/
 int ackPolling(int addressForAckPolling) {
     uint8_t nack_count = 0;
     while (1) {
@@ -496,6 +515,8 @@ int ackPolling(int addressForAckPolling) {
 ////////////////////////////////////////////////////////////////////////////////
 // power cycle 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to power cycle the GreenPAK device
+*/
 void powercycle() {
   if(wybor == 'm') Serial.println(F("Power Cycling!")); // print only in manual mode
   digitalWrite(VDD, LOW);
@@ -506,6 +527,12 @@ void powercycle() {
 ////////////////////////////////////////////////////////////////////////////////
 // save to EEPROM
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to save data to Arduino EEPROM
+   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+   data: pointer to data array to be saved
+   rozmiar: size of data array
+   returns true if OK or false if verification fails
+*/
 bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
   boolean success=false;
   if(NVMorEEPROM == 'n') {
@@ -530,11 +557,7 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
     Serial.println(F("ERROR! WRONG PARAMETER!"));
     success=false;
   }
-  //if(success){
- //   if(wybor == 'm') Serial.println(F("Done Saving to EEPROM!")); // print only in manual mode
-//  }
-//  else Serial.println(F("Error Saving to EEPROM!"));
-//Weryfikacja zapisu
+//Verification
   for (size_t i = 0; i < rozmiar; ++i) {
     if (EEPROM.read(offsetAddress + i) != data[i]) {
       if (wybor == 'm') {
@@ -550,7 +573,6 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
     if (wybor == 'm') Serial.println(F("Done Saving to EEPROM! (verified)"));
     return true;
   } else {
-    //Serial.println(F("Error Saving to EEPROM!"));
     return false;
   }
 }

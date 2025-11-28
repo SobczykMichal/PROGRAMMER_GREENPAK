@@ -7,21 +7,20 @@
 #include "automatic.h"
 #include "memory.h"
 #include "utils.h"
-
 ////////////////////////////////////////////////////////////////////////////////
 // setup 
 ////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  mySerial.begin(9600);    // start komunikacji na SoftwareSerial
-  Wire.begin(); // join i2c bus (address optional for master)
-  Wire.setClock(400000);
+  mySerial.begin(9600);  //SoftwareSerial initialization
+  Wire.begin(); 
+  Wire.setClock(400000); // Ustawienie prędkości I2C na 400kHz
   Serial.begin(115200);
   pinMode(VDD, OUTPUT);  // This will be the GreenPAK's VDD
   digitalWrite(VDD, HIGH);
+  pinMode(buttonPin, INPUT_PULLUP); //button pin initialization
   delay(100);
   Serial.println(F("Set mode: a = automatic writing, m = manual.First opening in automatic mode."));
   wybor='a'; //  default mode is automatic
-  pinMode(buttonPin, INPUT_PULLUP); // aktywacja wewnętrznego pull-up
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,12 +34,12 @@ void loop() {
   char updateSelection = 0;
   char GPorARDU=0;
   clearSerialmySerialBuffer();
-  if(wybor == 'a'){
+  if(wybor == 'a'){ //automatic mode
     ping();
     lastOperationStatus= automatic_mode();
     StatusOperation(lastOperationStatus);
   }
-  else
+  else // manual mode
   {
   delay(20);
   clearSerialmySerialBuffer();
@@ -49,10 +48,10 @@ void loop() {
   switch (selection)
   {
     case 'r': 
-        Serial.println(F("Reading chip!"));
-        mySerial.println(F("Reading chip!")); // Informacja na SoftwareSerial
+        Serial.println(F("Reading chip!")); // Display for user
+        mySerial.println(F("Reading chip!")); 
         if(requestSlaveAddress() =='q') break; 
-        NVMorEEPROM = requestNVMorEeprom();// wykonuj to jesli request inny niz q
+        NVMorEEPROM = requestNVMorEeprom();
         if (NVMorEEPROM == 'q'){
           clearSerialmySerialBuffer();
           break;
@@ -71,7 +70,7 @@ void loop() {
           break;
         }
         clearSerialmySerialBuffer();
-        readProgram(NVMorEEPROM, 16, GPorARDU, ARDU_FLASHorEEPROM);
+        lastOperationStatus = readProgram(NVMorEEPROM, 16, GPorARDU, ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!"));
         break;
     case 'e': 
@@ -85,8 +84,9 @@ void loop() {
           break;
         }
         else{
-          if (eraseChip(NVMorEEPROM) == 0) {
-          // Serial.println(F("Done erasing!"));
+          lastOperationStatus = eraseChip(NVMorEEPROM);
+          if (lastOperationStatus == 0) {
+          // Serial.println(F("Done erasing!")); // Display for user
           } 
           else {
             Serial.println(F("Erasing did not complete correctly!"));
@@ -114,33 +114,24 @@ void loop() {
           if(SERIALorMEM == 's'){
             updateSelection = requestUpdateEEPROM();
             clearSerialmySerialBuffer();
-          }       
-          if (eraseChip(NVMorEEPROM) == 0) {
+          }
+          lastOperationStatus = eraseChip(NVMorEEPROM);
+          if (lastOperationStatus == 0) {
             // Serial.println(F("Done erasing!"));
           } else {
             Serial.println(F("Erasing did not complete correctly!"));
           }
-
-          ping();
-          writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
-          //sprawdzenie=writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
-          //Serial.println(F("Sprawdzam wartosc writa"));
-          //Serial.println(sprawdzenie);
-          //if (sprawdzenie== 0) {
-            // Serial.println(F("Done writing!"));
-          //} else {
-          ///  Serial.println(F("Writing did not complete correctly!"));
-          //}
-
+        ping();
+        lastOperationStatus =  writeChip(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
         ping();
 
-        readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
-        // Serial.println(F("Done Reading!"));
+        lastOperationStatus = readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
+        // Serial.println(F("Done Reading!")); // Display for user
         break;
     case 'p': 
         Serial.println(F("Pinging!"));
         ping();
-        // Serial.println(F("Done Pinging!"));
+        // Serial.println(F("Done Pinging!")); // Display for user
         break;
     case 'a':
         wybor='a';

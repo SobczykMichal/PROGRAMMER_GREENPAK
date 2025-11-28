@@ -8,6 +8,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // calculateCRC8
 ////////////////////////////////////////////////////////////////////////////////////////
+/* Function to calculate CRC8 checksum
+   data: pointer to data array
+   length: length of data array
+   returns CRC8 checksum
+*/
 uint8_t calculateCRC8(uint8_t *data, size_t length) {
     // Używamy standardowego wielomianu CRC-8 (0x07), init 0x00, bez inwersji
     // Parametry: (Polynomial, Initial Value, Final XOR, RefIn, RefOut)
@@ -22,6 +27,9 @@ uint8_t calculateCRC8(uint8_t *data, size_t length) {
 ////////////////////////////////////////////////////////////////////////////////
 // print hex 8 
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to print 8-bit data in hexadecimal format
+   data: 8-bit data to print
+*/
 void PrintHex8(uint8_t data) {
   if (data < 0x10) {
     Serial.print(F("0"));
@@ -32,6 +40,10 @@ void PrintHex8(uint8_t data) {
 ////////////////////////////////////////////////////////////////////////////////
 // hex char to int
 ////////////////////////////////////////////////////////////////////////////////
+/* Function to convert hexadecimal character to integer
+   c: hexadecimal character (0-9, A-F, a-f)
+   returns integer value or -1 if invalid character
+*/
 int hexCharToInt(char c) {
   if (c >= '0' && c <= '9') return c - '0';
   if (c >= 'A' && c <= 'F') return c - 'A' + 10;
@@ -41,6 +53,8 @@ int hexCharToInt(char c) {
 ////////////////////////////////////////////////////////////////////////////////
 // Clear Serial Buffer
 //////////////////////////////////////////////////////////////////////////////
+/* Function to clear Serial and mySerial buffers
+*/
 void clearSerialmySerialBuffer() {
   while (Serial.available()>0) {
     Serial.read();
@@ -49,5 +63,4 @@ void clearSerialmySerialBuffer() {
   {
     mySerial.read();
   }
-  
 }

@@ -85,10 +85,5 @@ uint8_t CRC8fromSerial = 0; // wynik CRC-8
 uint16_t offsetAddress = 0; // offset do zapisu nowego adresu
 int8_t lastOperationStatus = 0; // status ostatniej operacji
 uint8_t buttonPin = 10; // pin przycisku
-unsigned long debounceDelay = 500; // czas w ms
-int lastStableState = HIGH;       // ostatni stabilny stan
-int currentState;
-unsigned long lastChangeTime = 0;
-
 // RX, TX
 SoftwareSerial mySerial(11, 12);
