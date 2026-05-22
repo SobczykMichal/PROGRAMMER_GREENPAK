@@ -16,7 +16,7 @@ void setup() {
   Wire.begin(); 
   Wire.setClock(400000); // Ustawienie prędkości I2C na 400kHz
   Serial.begin(115200);
-  pinMode(VDD, OUTPUT);  // This will be the GreenPAK's VDD
+  pinMode(VDD, OUTPUT);  // This will be the GreenPAK's VDD (2)
   digitalWrite(VDD, HIGH);
   pinMode(buttonPin, INPUT_PULLUP); //button pin initialization
   delay(100);
@@ -104,7 +104,8 @@ void loop() {
           SERIALorMEM = requestSERIALorMEM();
           clearSerialBuffer();
           if(SERIALorMEM == 'q') break;       
-          if(SERIALorMEM == 'm'){
+          if(SERIALorMEM == 'a'){
+          //if(SERIALorMEM == 'm'){
             ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
             if(ARDU_FLASHorEEPROM=='q') break;
             clearSerialBuffer();

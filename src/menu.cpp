@@ -148,10 +148,12 @@ char requestSERIALorMEM() {
           clearSerialBuffer();
           Serial.println(F("SERIAL"));
           return 's';
-      case 'm':
+      //case 'm': zmiana m na a zeby ujednolicic read i write w automatic i manual mode
+      case 'a':
           clearSerialBuffer();
-          Serial.println(F("MEMORY"));
-          return 'm';
+          Serial.println(F("ARDUINO MEMORY"));
+          return 'a';
+          //return 'm'; proba podmianki na a zeby ujednolicic read i write w automatic i manual mode
       case 'q' :
           clearSerialBuffer();
           Serial.println(F("Back to main menu"));
@@ -159,7 +161,7 @@ char requestSERIALorMEM() {
           
       default:
           clearSerialBuffer();
-          Serial.println(F("Invalid selection. You did not enter \"s\" or \"m\"."));
+          Serial.println(F("Invalid selection. You did not enter \"s\" or \"a\"."));
           continue;
     }
   }
