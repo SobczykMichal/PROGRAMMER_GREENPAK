@@ -25,7 +25,7 @@ void receive_command(){
         if(command[0]=='m'){
           selectionMode='m'; // go to manual mode
           clearSerialBuffer();
-          return 0;
+          return;
         }
         else if(command[0]=='e' && index ==3){
           index=7; // end reading after 3 characters
@@ -37,7 +37,7 @@ void receive_command(){
           Serial.println(F("ERROR! Wrong first command!"));
           index=0;
           clearSerialBuffer();
-          return -1;
+          return;
         }
       }
     }
