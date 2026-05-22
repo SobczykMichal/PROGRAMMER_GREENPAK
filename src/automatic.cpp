@@ -4,6 +4,45 @@
 #include "memory.h"
 #include "menu.h"
 #include <Arduino.h>
+void receive_command(){
+  char command[8]= {0}; // 7 znaków + null terminator
+  uint8_t index = 0;
+  while(index<7){
+    if (Serial.available() > 0 || mySerial.available() > 0) { // Check both Serial and mySerial
+      char c=0;
+      if(Serial.available() > 0){
+        c = Serial.read();
+      }
+      else if(mySerial.available() > 0){
+        c = mySerial.read();
+      }
+      command[index] = c;
+      index++;
+      if (c == '\n' || c == '\r') {
+      index--; // Ignore new line characters
+      }
+      else{
+        if(command[0]=='m'){
+          selectionMode='m'; // go to manual mode
+          clearSerialBuffer();
+          return 0;
+        }
+        else if(command[0]=='e' && index ==3){
+          index=7; // end reading after 3 characters
+        } 
+        else if (command[0] == 'r' && index == 5){
+          index=7; // end reading after 5 characters
+        }
+        else if (command[0] != 'm' && command[0] != 'e' && command[0] != 'r' && command[0] != 'w'){
+          Serial.println(F("ERROR! Wrong first command!"));
+          index=0;
+          clearSerialBuffer();
+          return -1;
+        }
+      }
+    }
+  }
+}
 int automatic_mode() {
   char command[8]= {0}; // 7 znaków + null terminator
   uint8_t index = 0;
@@ -39,7 +78,8 @@ int automatic_mode() {
           }
           eraseChip('n');
           change_address=false;
-           return writeChip('n', 'm', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used
+          return menageWritting('n', 'a', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used 
+          //return menageWritting('n', 'm', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used
         }
       }
     }
@@ -63,7 +103,7 @@ int automatic_mode() {
       else{
         if(command[0]=='m'){
           selectionMode='m'; // go to manual mode
-          clearSerialmySerialBuffer();
+          clearSerialBuffer();
           return 0;
         }
         else if(command[0]=='e' && index ==3){
@@ -75,13 +115,13 @@ int automatic_mode() {
         else if (command[0] != 'm' && command[0] != 'e' && command[0] != 'r' && command[0] != 'w'){
           Serial.println(F("ERROR! Wrong first command!"));
           index=0;
-          clearSerialmySerialBuffer();
+          clearSerialBuffer();
           return -1;
         }
       }
     }
   }
-  clearSerialmySerialBuffer();
+  clearSerialBuffer();
   // Parse command
   char cmd = command[0];
   char addr = command[1];
@@ -90,18 +130,6 @@ int automatic_mode() {
   char storage = command[4];
   char newaddr = command[5];
   char updateEEPROM = command[6];
-
-    // Debug: Display logs
-  /*
-  Serial.println(F("Odebrane znaki:"));
-  Serial.print(F("cmd: ")); Serial.println(cmd);
-  Serial.print(F("addr: ")); Serial.println(addr);
-  Serial.print(F("memType: ")); Serial.println(memType);
-  Serial.print(F("source: ")); Serial.println(source);
-  Serial.print(F("storage: ")); Serial.println(storage);
-  Serial.print(F("newaddr: ")); Serial.println(newaddr);
-  Serial.print(F("updateEEPROM: ")); Serial.println(updateEEPROM);
-  */
   //Check commands
   if ( (addr >= '0' && addr <= '9') ||   // 1. check if addr is a digit (between '0' and 'f')
      (addr >= 'a' && addr <= 'f') ||   
@@ -115,7 +143,8 @@ int automatic_mode() {
   }
   if (cmd == 'w')
   {
-    if (source != 's' && source != 'm'){
+    //if (source != 's' && source != 'm'){ //zmiana m na a
+    if (source != 's' && source != 'a'){ //zmiana m na a
       return -4; // error invalid source parameter
     }
     if (storage != 'a' && storage != 'f'){
@@ -143,7 +172,7 @@ int automatic_mode() {
     return -7; // error invalid updateEEPROM parameter
   }
   }
-  clearSerialmySerialBuffer();
+  clearSerialBuffer();
   if(addr == 'x'){// check available address
     for (uint8_t i = 0; i < 16; i++) {
           if(device_present[i] == true) {
@@ -189,7 +218,7 @@ int automatic_mode() {
         return -10; // error erasing failed
       }
       ping();
-      writeChip(memType, source, storage, updateEEPROM, new_int_addr);
+      menageWritting(memType, source, storage, updateEEPROM, new_int_addr);
       return readProgram(memType, 15, 'g', storage);
   }
   else if (cmd =='r'){

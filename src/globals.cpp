@@ -87,3 +87,4 @@ int8_t lastOperationStatus = 0; // status ostatniej operacji
 uint8_t buttonPin = 10; // pin przycisku
 // RX, TX
 SoftwareSerial mySerial(11, 12);
+char command[8];

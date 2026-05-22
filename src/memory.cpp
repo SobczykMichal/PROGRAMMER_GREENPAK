@@ -17,6 +17,7 @@
     returns 0 if OK or -11 if data incorrect during checking
 */
 int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARDU_FLASHorEEPROM) { 
+  Serial.println(F("Read program"));
   int control_code = slave_address << 3;
   int index = 0;
   if (NVMorEEPROM == 'n')
@@ -124,83 +125,17 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
-// eraseChip 
+// manageWritting 
 ////////////////////////////////////////////////////////////////////////////////
-/* Function to erase GreenPAK NVM/EEPROM
+/* Function to manage writing to GreenPAK NVM/EEPROM
    NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+    SERIALorMEM: 's' for SERIAL, 'm' for MEMORY
+    ARDU_FLASHorEEPROM: 'a' for Arduino EEPROM, 'f' for Arduino Flash
+    updateSelection: 'u' for update Arduino EEPROM after writing, 'i' for ignore update
+    new_address: new slave address if user wants to change it, not used if user wants to keep current slave address
    returns 0 if OK or -11 if something wrong during erasing
 */
-int eraseChip(char NVMorEEPROM) {
-  uint8_t control_code = slave_address << 3;
-  uint8_t addressForAckPolling = control_code;
-
-  for (uint8_t i = 0; i < 16; i++) {
-    if(selectionMode == 'm'){
-      Serial.print(F("Erasing page: 0x"));
-      PrintHex8(i);
-      Serial.print(F(" "));
-    }
-    Wire.beginTransmission(control_code);
-    Wire.write(0xE3);
-    if (NVMorEEPROM == 'n')
-    {
-      if (selectionMode == 'm'){
-        Serial.print(F("NVM ")); //print only in manual mode
-      } 
-      Wire.write(0x80 | i);
-    }
-    else if (NVMorEEPROM == 'e')
-    {
-      if (selectionMode == 'm'){
-        Serial.print(F("EEPROM ")); //print only in manual mode
-      } 
-      Wire.write(0x90 | i);
-    }
-    
-/* To accommodate for the non-I2C compliant ACK behavior of the Page Erase Byte, we've removed the software check for an I2C ACK
- *  and added the "Wire.endTransmission();" line to generate a stop condition.
- *  - Please reference "Issue 2: Non-I2C Compliant ACK Behavior for the NVM and EEPROM Page Erase Byte"
- *    in the SLG46824/6 (XC revision) errata document for more information. */
-
-//    if (Wire.endTransmission() == 0) {
-//      Serial.print(F("ack "));
-//    } 
-//    else { 
-//      Serial.print(F("nack "));  
-//      return -1;
-//    }
-
-    Wire.endTransmission();
-
-    if (ackPolling(addressForAckPolling) == -1)
-    {
-      return -11;
-    } else {
-      if(selectionMode == 'm'){
-        Serial.print(F("ready ")); // print only in manual mode
-      } 
-      delay(100);
-    }
-    if(selectionMode == 'm'){
-      Serial.println(); // print only in manual mode
-    }  
-  }
-  powercycle();
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// writeChip 
-////////////////////////////////////////////////////////////////////////////////
-/* Function to write data to GreenPAK NVM/EEPROM
-   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
-   SERIALorMEM: 's' for serial input, 'm' for memory input
-   ARDU_FLASHorEEPROM: 'a' for Arduino EEPROM, 'f' for Arduino Flash (only if SERIALorMEM='m')
-   updateSelection: 'u' for update EEPROM, 'i' for ignore update (only if NVMorEEPROM='e' and SERIALorMEM='s')
-   new_address: new slave address (0-15) if change_address=true
-   returns 0 if OK or -9 if wrong parameter or -7 if data incorrect during checking or -12 if something wrong during writing
-*/
-int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address) {
+int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char updateSelection, uint8_t new_address) {
   uint8_t control_code = 0x00;
   uint8_t addressForAckPolling = 0x00;
 
@@ -246,11 +181,12 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     //if(wybor == 0) Serial.println(F("Getting data from SERIAL input")); // print only in manual mode
     Serial.println(F("Getting data from SERIAL input")); // print only in manual mode
     data_from_SERIAL = true;
-    clearSerialmySerialBuffer();
+    clearSerialBuffer();
   }
-  else if (SERIALorMEM == 'm')
+  else if (SERIALorMEM == 'a') //zmiana m na a bo musze ujednolicic write i read w automatic i manual mode
+  //else if (SERIALorMEM == 'm') //zmiana m na a bo musze ujednolicic write i read w automatic i manual mode
   {
-    if(selectionMode == 'm') Serial.println(F("Getting data from MEMORY")); // print only in manual mode
+    if(selectionMode == 'm') Serial.println(F("Getting data from Arduino MEMORY")); // print only in manual mode
     data_from_MEMORY = true;
 
     if (ARDU_FLASHorEEPROM == 'a'){
@@ -319,7 +255,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     Serial.print(F("CRC8: "));
     Serial.println(CRC8fromSerial, HEX);
     }
-    clearSerialmySerialBuffer();
+    clearSerialBuffer();
     // Serial.println(F("New NVM data:")); // Display for user
     if(data_from_MEMORY)
     {
@@ -373,7 +309,7 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     {
       while(1) {
         delay(10);
-        clearSerialmySerialBuffer();
+        clearSerialBuffer();
         int temp=0;
         if(selectionMode == 'm'){
         char newSA = query(7);
@@ -464,7 +400,72 @@ int writeChip(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, char 
     powercycle();
     return 0;
 }
+////////////////////////////////////////////////////////////////////////////////
+// eraseChip 
+////////////////////////////////////////////////////////////////////////////////
+/* Function to erase GreenPAK NVM/EEPROM
+   NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
+   returns 0 if OK or -11 if something wrong during erasing
+*/
+int eraseChip(char NVMorEEPROM) {
+  Serial.println(F("Erase chip"));
+  uint8_t control_code = slave_address << 3;
+  uint8_t addressForAckPolling = control_code;
 
+  for (uint8_t i = 0; i < 16; i++) {
+    if(selectionMode == 'm'){
+      Serial.print(F("Erasing page: 0x"));
+      PrintHex8(i);
+      Serial.print(F(" "));
+    }
+    Wire.beginTransmission(control_code);
+    Wire.write(0xE3);
+    if (NVMorEEPROM == 'n')
+    {
+      if (selectionMode == 'm'){
+        Serial.print(F("NVM ")); //print only in manual mode
+      } 
+      Wire.write(0x80 | i);
+    }
+    else if (NVMorEEPROM == 'e')
+    {
+      if (selectionMode == 'm'){
+        Serial.print(F("EEPROM ")); //print only in manual mode
+      } 
+      Wire.write(0x90 | i);
+    }
+    
+/* To accommodate for the non-I2C compliant ACK behavior of the Page Erase Byte, we've removed the software check for an I2C ACK
+ *  and added the "Wire.endTransmission();" line to generate a stop condition.
+ *  - Please reference "Issue 2: Non-I2C Compliant ACK Behavior for the NVM and EEPROM Page Erase Byte"
+ *    in the SLG46824/6 (XC revision) errata document for more information. */
+
+//    if (Wire.endTransmission() == 0) {
+//      Serial.print(F("ack "));
+//    } 
+//    else { 
+//      Serial.print(F("nack "));  
+//      return -1;
+//    }
+
+    Wire.endTransmission();
+
+    if (ackPolling(addressForAckPolling) == -1)
+    {
+      return -11;
+    } else {
+      if(selectionMode == 'm'){
+        Serial.print(F("ready ")); // print only in manual mode
+      } 
+      delay(100);
+    }
+    if(selectionMode == 'm'){
+      Serial.println(); // print only in manual mode
+    }  
+  }
+  powercycle();
+  return 0;
+}
 ////////////////////////////////////////////////////////////////////////////////
 // ping 
 ////////////////////////////////////////////////////////////////////////////////
@@ -521,7 +522,7 @@ int ackPolling(int addressForAckPolling) {
 /* Function to power cycle the GreenPAK device
 */
 void powercycle() {
-  if(selectionMode == 'm') Serial.println(F("Power Cycling!")); // print only in manual mode
+  Serial.println(F("Power Cycling!")); // print only in manual mode
   digitalWrite(VDD, LOW);
   delay(500);
   digitalWrite(VDD, HIGH);
