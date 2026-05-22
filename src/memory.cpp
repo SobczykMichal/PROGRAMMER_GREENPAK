@@ -129,7 +129,7 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
 ////////////////////////////////////////////////////////////////////////////////
 /* Function to manage writing to GreenPAK NVM/EEPROM
    NVMorEEPROM: 'n' for NVM, 'e' for EEPROM
-    SERIALorMEM: 's' for SERIAL, 'm' for MEMORY
+    SERIALorMEM: 's' for SERIAL, 'a' for Arduino MEMORY
     ARDU_FLASHorEEPROM: 'a' for Arduino EEPROM, 'f' for Arduino Flash
     updateSelection: 'u' for update Arduino EEPROM after writing, 'i' for ignore update
     new_address: new slave address if user wants to change it, not used if user wants to keep current slave address
@@ -184,9 +184,8 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     clearSerialBuffer();
   }
   else if (SERIALorMEM == 'a') //zmiana m na a bo musze ujednolicic write i read w automatic i manual mode
-  //else if (SERIALorMEM == 'm') //zmiana m na a bo musze ujednolicic write i read w automatic i manual mode
   {
-    if(selectionMode == 'm') Serial.println(F("Getting data from Arduino MEMORY")); // print only in manual mode
+    if(selectionMode == 'm') Serial.println(F("Getting data from ARDUINO MEMORY")); // print only in manual mode
     data_from_MEMORY = true;
 
     if (ARDU_FLASHorEEPROM == 'a'){

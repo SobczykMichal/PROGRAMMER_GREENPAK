@@ -135,7 +135,7 @@ char requestARDU_EEPROMorFLASH() {
 // request SERIAL or MEMORY
 ////////////////////////////////////////////////////////////////////////////////
 /* Function to request data source type
-   returns 's' for SERIAL or 'm' for MEMORY
+   returns 's' for SERIAL or 'a' for MEMORY
 */
 char requestSERIALorMEM() {
   while (1)
@@ -148,17 +148,14 @@ char requestSERIALorMEM() {
           clearSerialBuffer();
           Serial.println(F("SERIAL"));
           return 's';
-      //case 'm': zmiana m na a zeby ujednolicic read i write w automatic i manual mode
       case 'a':
           clearSerialBuffer();
           Serial.println(F("ARDUINO MEMORY"));
           return 'a';
-          //return 'm'; proba podmianki na a zeby ujednolicic read i write w automatic i manual mode
       case 'q' :
           clearSerialBuffer();
           Serial.println(F("Back to main menu"));
           return 'q';
-          
       default:
           clearSerialBuffer();
           Serial.println(F("Invalid selection. You did not enter \"s\" or \"a\"."));
@@ -217,7 +214,7 @@ case 3:
   Serial.println(F("MENU: n = NVM, e = EEPROM:"));
   break;
 case 4:
-  Serial.println(F("MENU: s = SERIAL, m = MEMORY:"));
+  Serial.println(F("MENU: s = SERIAL, a = ARDUINO MEMORY:"));
   break;
 case 5:
   Serial.println(F("MENU: a = ARDUINO EEPROM MEMORY, f = FLASH ARDUINO MEMORY"));

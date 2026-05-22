@@ -79,7 +79,6 @@ int automatic_mode() {
           eraseChip('n');
           change_address=false;
           return menageWritting('n', 'a', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used 
-          //return menageWritting('n', 'm', 'a', 'i',0); //nvm, memory, arduino eeprom, ignore update, new address but not used
         }
       }
     }
@@ -143,8 +142,7 @@ int automatic_mode() {
   }
   if (cmd == 'w')
   {
-    //if (source != 's' && source != 'm'){ //zmiana m na a
-    if (source != 's' && source != 'a'){ //zmiana m na a
+    if (source != 's' && source != 'a'){
       return -4; // error invalid source parameter
     }
     if (storage != 'a' && storage != 'f'){

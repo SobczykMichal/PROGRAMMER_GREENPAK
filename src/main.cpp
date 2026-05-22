@@ -105,7 +105,6 @@ void loop() {
           clearSerialBuffer();
           if(SERIALorMEM == 'q') break;       
           if(SERIALorMEM == 'a'){
-          //if(SERIALorMEM == 'm'){
             ARDU_FLASHorEEPROM=requestARDU_EEPROMorFLASH();
             if(ARDU_FLASHorEEPROM=='q') break;
             clearSerialBuffer();
