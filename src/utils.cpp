@@ -55,7 +55,7 @@ int hexCharToInt(char c) {
 //////////////////////////////////////////////////////////////////////////////
 /* Function to clear Serial and mySerial buffers
 */
-void clearSerialmySerialBuffer() {
+void clearSerialBuffer() {
   while (Serial.available()>0) {
     Serial.read();
   }
