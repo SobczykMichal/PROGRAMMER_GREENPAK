@@ -258,19 +258,19 @@ void StatusOperation(int8_t status){
     mySerial.println(F("E2"));
   }
   else if(status==-3){
-    Serial.println(F("Operation failed due to invalid memory type."));
+    Serial.println(F("Operation failed due to invalid memory GPAK type."));
     mySerial.println(F("E3"));
   }
   else if(status==-4){
-    Serial.println(F("Operation failed due to invalid source type."));
+    Serial.println(F("Operation failed due to invalid source writing parameter."));
     mySerial.println(F("E4"));
   }
   else if(status==-5){
-    Serial.println(F("Operation failed due to invalid storage type."));
+    Serial.println(F("Operation failed due to invalid source type parameter."));
     mySerial.println(F("E5"));
   }
   else if(status==-6){
-    Serial.println(F("Operation failed due to invalid source type."));
+    Serial.println(F("Operation failed due to invalid source reading parameter."));
     mySerial.println(F("E6"));
   }
   else if(status==-7){

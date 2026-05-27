@@ -72,13 +72,9 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
     }
     if (CheckOrRead == 15){
       if(checkState){
-        //Serial.println(F("OK")); // debug
-        //mySerial.println(F("OK"));
         return 0;
       }
       else {
-       //Serial.println(F("E")); // debug
-        //mySerial.println(F("E"));
         return -11;
       }
     }
@@ -149,9 +145,10 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
   {
     // Serial.println(F("Writing NVM")); // Display for user
     // Set the slave address to 0x00 since the chip has just been erased
-    slave_address = 0x00;
-    // Set the control code to 0x00 since the chip has just been erased
-    control_code = 0x00;
+    slave_address = 0x00; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU
+    // Set the control code to 0x00 since the chip has just been erased (zakomentowac)
+    control_code = 0x00; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (zakomentoowac)
+    //control_code = slave_address << 3; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (odkomentowac)
     control_code |= NVM_CONFIG;
     NVM_selected = true;
     addressForAckPolling = 0x00;
@@ -462,7 +459,7 @@ int eraseChip(char NVMorEEPROM) {
       Serial.println(); // print only in manual mode
     }  
   }
-  powercycle();
+  powercycle(); //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (zakomentowac)
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
