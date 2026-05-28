@@ -33,6 +33,7 @@ void loop() {
   char ARDU_FLASHorEEPROM = 0;
   char updateSelection = 0;
   char GPorARDU=0;
+  int8_t NewSlaveAddress=0;
   clearSerialBuffer();
   if(selectionMode == 'a'){ //automatic mode
     ping();
@@ -85,6 +86,7 @@ void loop() {
         }
         else{
           lastOperationStatus = eraseChip(NVMorEEPROM);
+          powercycle(); //dodano tutaj zamiast w funkcji erase chip
           if (lastOperationStatus == 0) {
           // Serial.println(F("Done erasing!")); // Display for user
           } 
@@ -114,14 +116,10 @@ void loop() {
             updateSelection = requestUpdateEEPROM();
             clearSerialBuffer();
           }
-          lastOperationStatus = eraseChip(NVMorEEPROM);
-          if (lastOperationStatus == 0) {
-            // Serial.println(F("Done erasing!"));
-          } else {
-            Serial.println(F("Erasing did not complete correctly!"));
-          }
-        ping();
-        lastOperationStatus =  menageWritting(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection, 0);
+        NewSlaveAddress = requestNewSlaveAddress();
+        clearSerialBuffer();
+        if (NVMorEEPROM != 'r') lastOperationStatus = eraseChip(NVMorEEPROM);
+        lastOperationStatus =  menageWritting(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection,NewSlaveAddress);
         ping();
         lastOperationStatus = readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
         // Serial.println(F("Done Reading!")); // Display for user

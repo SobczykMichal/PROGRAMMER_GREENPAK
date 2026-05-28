@@ -30,8 +30,17 @@ int readProgram(char NVMorEEPROM, uint8_t CheckOrRead, char GPAKorArdu, char ARD
     offsetAddress=256; // EEPROM starts from address 256 in Arduino EEPROM
     control_code |= EEPROM_CONFIG;
   }
+  else if(NVMorEEPROM == 'r')
+  {
+    offsetAddress=0; // RAM starts from address 0 in Arduino EEPROM
+    control_code |= RD_CONFIG;
+  }
+  else{
+    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    return -9;
+  }
 
-  if((NVMorEEPROM == 'n' || NVMorEEPROM == 'e') && GPAKorArdu == 'g'){
+  if((NVMorEEPROM == 'n' || NVMorEEPROM == 'e' || NVMorEEPROM == 'r') && GPAKorArdu == 'g'){
     bool checkState=true;
     for (uint8_t i = 0; i < CheckOrRead; i++) {
       Wire.beginTransmission(control_code);
@@ -137,6 +146,7 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
 
   bool NVM_selected = false;
   bool EEPROM_selected = false;
+  bool RD_selected = false;
   bool  data_from_SERIAL = false;
   bool  data_from_MEMORY = false;
   bool  data_from_ARDUINO_EEPROM = false;
@@ -144,14 +154,10 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
   if (NVMorEEPROM == 'n')
   {
     // Serial.println(F("Writing NVM")); // Display for user
-    // Set the slave address to 0x00 since the chip has just been erased
-    slave_address = 0x00; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU
-    // Set the control code to 0x00 since the chip has just been erased (zakomentowac)
-    control_code = 0x00; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (zakomentoowac)
-    //control_code = slave_address << 3; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (odkomentowac)
+    control_code = slave_address << 3;
     control_code |= NVM_CONFIG;
     NVM_selected = true;
-    addressForAckPolling = 0x00;
+    addressForAckPolling = slave_address << 3;
   }
   else if (NVMorEEPROM == 'e')
   {
@@ -162,9 +168,16 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     EEPROM_selected = true;
     addressForAckPolling = slave_address << 3;
   }
+  else if(NVMorEEPROM == 'r'){
+    // Serial.println(F("Writing RAM")); // Display for user
+    control_code = slave_address << 3; 
+    control_code |= RD_CONFIG;
+    RD_selected = true;
+    addressForAckPolling = slave_address << 3;
+    
+  }
   else{
-    Serial.println(F("Pierwszy, przy nvm or eeprom"));
-    Serial.println(F("ERROR! WRONG PARAMETER!"));
+    Serial.println(F("ERROR! WRONG MEMORY TO WRITE PARAMETER!"));
     return -9;
   }
 
@@ -180,13 +193,13 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     data_from_SERIAL = true;
     clearSerialBuffer();
   }
-  else if (SERIALorMEM == 'a') //zmiana m na a bo musze ujednolicic write i read w automatic i manual mode
+  else if (SERIALorMEM == 'a') // zrodlo arduino
   {
     if(selectionMode == 'm') Serial.println(F("Getting data from ARDUINO MEMORY")); // print only in manual mode
     data_from_MEMORY = true;
 
     if (ARDU_FLASHorEEPROM == 'a'){
-      //Serial.println(F("Using ARDUINO EEPROM MEMORY")); // Display for user
+      //Serial.println(F("Using ARDUINO EEPROM MEMORY")); // Display for user TEST
       data_from_ARDUINO_EEPROM = true;
     }
     else if (ARDU_FLASHorEEPROM == 'f'){
@@ -261,7 +274,7 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     {
       // Pull current page NVM from PROGMEM and place into buffer
       char buffer [33];
-      if (NVM_selected)
+      if (NVM_selected || RD_selected)
       {
         char * ptr = (char *) pgm_read_word (&nvmString[i]);
         strcpy_P(buffer, ptr);
@@ -281,7 +294,7 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     }
     if (data_from_ARDUINO_EEPROM)
     {
-      if (NVM_selected)
+      if (NVM_selected || RD_selected)
       {
         offsetAddress = 0;
       }
@@ -301,53 +314,9 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     //Serial.println();
   }
     }
-    if (NVM_selected)
+    if (NVM_selected || RD_selected)
     {
-      while(1) {
-        delay(10);
-        clearSerialBuffer();
-        int temp=0;
-        if(selectionMode == 'm'){
-        char newSA = query(7);
-        if(newSA == 'x'){
-          temp=slave_address;
-          change_address = true;
-        }
-        else if(newSA == 'p') change_address=false;
-        else if(newSA == 'q') return 0;
-        else{
-          change_address = true;
-          temp = hexCharToInt(newSA);
-        }
-        if (newSA=='q'){
-          Serial.println(F("Back to main menu"));
-          return 0; // przerwana operacja
-        } 
-        }
-        if(selectionMode == 'a'){
-          temp = new_address;
-        }
-        if (temp < 0 || temp > 15)
-        {
-          if(selectionMode == 'm'){
-            Serial.println(temp);
-            Serial.println(F(" is not a valid slave address."));
-          }
-          continue;
-      }
-        else 
-        {
-          slave_address = temp;
-          if(selectionMode == 'm'){ // print only in manual mode
-            Serial.print(F("0x"));
-            PrintHex8(slave_address);
-            Serial.println();
-          }
-          break;
-        }
-      }
-
-      if (change_address == true) buffer_seria[NVM_SLAVE_ADDR_OFFSET] = slave_address;
+      if (change_address == true) buffer_seria[NVM_SLAVE_ADDR_OFFSET] =new_address; //slave_address;
     }
     // Write each byte of data_array[][] array to the chip
     for (uint8_t i = 0; i < 16; i++) {
@@ -357,6 +326,7 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
         PrintHex8(i);
         Serial.print(F(" "));
       }
+      Serial.println(i);
       for (uint8_t j = 0; j < 16; j++) {
           Wire.write(buffer_seria[i*16 + j]);
           if(selectionMode == 'm') PrintHex8(buffer_seria[i*16 + j]); // print only in manual mode
@@ -372,7 +342,17 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
 
           return -12;
       }
-
+      if(RD_selected && (i==12)){
+        control_code = 0;
+        control_code =new_address << 3; //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (odkomentowac)
+        control_code |= RD_CONFIG;
+        addressForAckPolling = new_address << 3; // update address for ack polling if writing to RAM and user decided to change slave address
+        Wire.beginTransmission(control_code);
+        Wire.write(i << 4);
+        Serial.print(F("New address for ack polling: 0x"));
+        PrintHex8(addressForAckPolling>>3);
+        Serial.println();
+      }
       if (ackPolling(addressForAckPolling) == -1)
       {
         Serial.println(F("Oh No! Something went wrong with ack polling!"));
@@ -380,7 +360,9 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
       } else {
         if(selectionMode == 'm') Serial.println(F("ready")); // print only in manual mode
         delay(100);
+        Serial.println(F("ack polling sie udalo")); 
       }
+      //Serial.println(F("Wyszedles z ack polling")); // Display for user
     }
 
   if (updateSelection == 'u' ) {
@@ -393,7 +375,13 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
     if (selectionMode=='m') Serial.println(F("Ignore updating to Arduino EEPROM"));
   }
   else return -9;
+  if(NVMorEEPROM== 'r'){
+  Serial.println(F("Done writing to RAM!")); // Display for user
+  }
+  else{
     powercycle();
+    Serial.println(F("Done writing to GREENPAK NVM or EEPROM!")); // Display for user
+  }
     return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -459,7 +447,7 @@ int eraseChip(char NVMorEEPROM) {
       Serial.println(); // print only in manual mode
     }  
   }
-  powercycle(); //  TESTOWANIE CZY POTRZEBNY RESET PO ERASINGU (zakomentowac)
+  //powercycle(); //  TEST CZY POTRZEBNY RESET PO ERASINGU (zakomentowac) --NIEPOTRZEBNY DO USUNIECIA
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -496,19 +484,19 @@ void ping() {
    returns 0 if ACK received or -12 if timeout occurs
 */
 int ackPolling(int addressForAckPolling) {
-    uint8_t nack_count = 0;
+    uint16_t nack_count = 0;
     while (1) {
       Wire.beginTransmission(addressForAckPolling);
+      
       if (Wire.endTransmission() == 0) {
         return 0;
       }
       if (nack_count >= 1000)
       {
-        Serial.println(F("Geez! Something went wrong while programming!"));
         return -12;
       }
       nack_count++;
-      delay(1);
+      delay(1); 
     }
 }
 
@@ -519,10 +507,29 @@ int ackPolling(int addressForAckPolling) {
 */
 void powercycle() {
   Serial.println(F("Power Cycling!")); // print only in manual mode
-  digitalWrite(VDD, LOW);
+  /*digitalWrite(VDD, LOW);
   delay(500);
-  digitalWrite(VDD, HIGH);
-  // Serial.println(F("Done Power Cycling!"));
+  digitalWrite(VDD, HIGH);*/
+  Serial.println(F("Sending soft reset command to addres..."));
+  Serial.print(F("0x"));
+  PrintHex8(slave_address);
+
+  Wire.beginTransmission(slave_address<<3);
+  Wire.write(0xc8);
+  // 4. Wyślij wartość 0x02, aby ustawić bit 1601 na '1' (wyzwalając reset)
+  Wire.write(0x02); 
+  
+  // 5. Zakończ transmisję i wyślij STOP
+  uint8_t error = Wire.endTransmission();
+  if (error == 0) {
+    Serial.println(F("Soft reset wysłany poprawnie"));
+    
+    // Układ potrzebuje ułamka sekundy na fizyczne przeładowanie danych z NVM
+    delay(10); 
+  } else {
+    Serial.print(F("Błąd wysyłania komendy soft reset! Kod błędu (NACK): "));
+    Serial.println(error);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 // save to EEPROM

@@ -4,45 +4,7 @@
 #include "memory.h"
 #include "menu.h"
 #include <Arduino.h>
-void receive_command(){
-  char command[8]= {0}; // 7 znaków + null terminator
-  uint8_t index = 0;
-  while(index<7){
-    if (Serial.available() > 0 || mySerial.available() > 0) { // Check both Serial and mySerial
-      char c=0;
-      if(Serial.available() > 0){
-        c = Serial.read();
-      }
-      else if(mySerial.available() > 0){
-        c = mySerial.read();
-      }
-      command[index] = c;
-      index++;
-      if (c == '\n' || c == '\r') {
-      index--; // Ignore new line characters
-      }
-      else{
-        if(command[0]=='m'){
-          selectionMode='m'; // go to manual mode
-          clearSerialBuffer();
-          return;
-        }
-        else if(command[0]=='e' && index ==3){
-          index=7; // end reading after 3 characters
-        } 
-        else if (command[0] == 'r' && index == 5){
-          index=7; // end reading after 5 characters
-        }
-        else if (command[0] != 'm' && command[0] != 'e' && command[0] != 'r' && command[0] != 'w'){
-          Serial.println(F("ERROR! Wrong first command!"));
-          index=0;
-          clearSerialBuffer();
-          return;
-        }
-      }
-    }
-  }
-}
+
 int automatic_mode() {
   char command[8]= {0}; // 7 znaków + null terminator
   uint8_t index = 0;
@@ -51,7 +13,7 @@ int automatic_mode() {
   int lastStableState = HIGH;       // ostatni stabilny stan
   int currentState;
   unsigned long lastChangeTime = 0;
-
+  
   ///// Display for user, comment for final version to avoid unnecessary output
   //Serial.println(F("Enter full command e. g. w1nma2u"));
   //Serial.println(F("w- write, 1- slave address, n/e- NVM/EEPROM, m-MEMORY/SERIAL, a/f- ARDUINO EEPROM/FLASH, new address (0-F), u/i- update/ignore"));
@@ -137,7 +99,7 @@ int automatic_mode() {
      else{
       return -2; // error invalid slave address
      }
-  if(memType!= 'n' && memType!='e'){
+  if(memType!= 'n' && memType!='e' && memType!='r'){
     return -3; // error invalid memory type
   }
   if (cmd == 'w')
@@ -207,6 +169,7 @@ int automatic_mode() {
       //Serial.print(F("New slave address: "));  // Display for user, comment for final version to avoid unnecessary output
       //Serial.print(new_int_addr); 
     }
+    if(memType!= 'r'){
       if (eraseChip(memType) == 0) {
         Serial.println(F("Done erasing!"));
        // mySerial.println(F("Done erasing!")); //debug
@@ -215,6 +178,7 @@ int automatic_mode() {
         //mySerial.println(F("Erasing did not complete correctly!")); 
         return -10; // error erasing failed
       }
+    }
       ping();
       menageWritting(memType, source, storage, updateEEPROM, new_int_addr);
       return readProgram(memType, 15, 'g', storage);
@@ -227,7 +191,10 @@ int automatic_mode() {
   else if (cmd =='e'){
     Serial.println(F("Erasing chip!"));
     mySerial.println(F("Erasing chip!"));
-    return eraseChip(memType);
+    if(eraseChip(memType)==0){
+      powercycle();
+      return 0;
+    }
   }
   else{
     return -9; // error wrong command

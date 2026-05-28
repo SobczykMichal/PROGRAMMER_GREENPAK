@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 char requestSlaveAddress();
+int8_t requestNewSlaveAddress();
 char requestNVMorEeprom();
 char requestSERIALorMEM();
 char requestUpdateEEPROM();

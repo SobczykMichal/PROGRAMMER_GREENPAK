@@ -36,7 +36,35 @@ char requestSlaveAddress() {
     }
   }
 }
+//////
+// request new slave addres
+//////
+int8_t requestNewSlaveAddress() {
+  char newaddr=query(7);
+  while(1) {
+    if ( (newaddr >= '0' && newaddr <= '9') ||   // 1. check if newaddr is a digit (between '0' and 'f')
+      (newaddr >= 'a' && newaddr <= 'f') ||   
+      (newaddr == 'x' || 'p') ){ // 2. OR if it is letter 'x' or 'p' (no change)
+      //correct command
+        if(newaddr == 'x'){
+          change_address = true; // zmiana adresu wzgledem wgranego programu na stary adres
+          return slave_address;
+        } 
+        else if (newaddr == 'p'){
+          change_address = false;
+          return 0; //brak zmiany adresu, pobranie adresu z wgranego programu
+        } 
+        else {
+          change_address = true;
+          return hexCharToInt(newaddr); //konkretna zmiana adresu na nowo wpisany adres
+        }
+    }
+    else{
+      continue;
+    }
 
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////
 // request NVM or EEPROM 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +87,10 @@ char requestNVMorEeprom() {
           Serial.println(F("EEPROM"));
           delay(10);
           return 'e';
+      case 'r':
+          Serial.println(F("RAM"));
+          delay(10);
+          return 'r';
       case 'q':
           Serial.println(F("Back to main menu"));
           clearSerialBuffer();
@@ -211,7 +243,7 @@ case 2:
   Serial.println(F("Submit slave address, 0-F:"));
   break;
 case 3:
-  Serial.println(F("MENU: n = NVM, e = EEPROM:"));
+  Serial.println(F("MENU: n = NVM, e = EEPROM:, r = RAM:"));
   break;
 case 4:
   Serial.println(F("MENU: s = SERIAL, a = ARDUINO MEMORY:"));

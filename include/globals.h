@@ -1,8 +1,9 @@
 #pragma once
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-#define NVM_CONFIG 0x02 //RD_CONFIG 0x01, NVM_CONFIG 0x02 (pozniej skaksuj 0x01 i wroc do 0x02) TEST
+#define NVM_CONFIG 0x02 //RD_CONFIG 0x01 lub 0x00, NVM_CONFIG 0x02 (pozniej skaksuj 0x01 i wroc do 0x02) TEST
 #define EEPROM_CONFIG 0x03
+#define RD_CONFIG 0x00
 //#define RD_CONFIG 0x01
 #define VDD 2 // GreenPAK VDD
 #define NVM_SLAVE_ADDR_PAGE 12
