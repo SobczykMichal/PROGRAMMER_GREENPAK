@@ -1,8 +1,12 @@
 #pragma once
 #include <Arduino.h>
+enum class MemoryScope {
+    NonVolatileOnly,  // Tylko NVM i EEPROM
+    AllIncludingRam   // NVM, EEPROM oraz RAM
+};
 char requestSlaveAddress();
 int8_t requestNewSlaveAddress();
-char requestNVMorEeprom();
+char requestNVMorEEPROMorRAM(MemoryScope scope);
 char requestSERIALorMEM();
 char requestUpdateEEPROM();
 char requestARDU_EEPROMorFLASH();

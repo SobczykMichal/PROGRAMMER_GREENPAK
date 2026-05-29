@@ -162,7 +162,6 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
   else if (NVMorEEPROM == 'e')
   {
     // Serial.println(F("Writing EEPROM with ADDRESS")); // Display for user
-    // Serial.println(slave_address);
     control_code = slave_address << 3;
     control_code |= EEPROM_CONFIG;
     EEPROM_selected = true;
@@ -349,9 +348,6 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
         addressForAckPolling = new_address << 3; // update address for ack polling if writing to RAM and user decided to change slave address
         Wire.beginTransmission(control_code);
         Wire.write(i << 4);
-        Serial.print(F("New address for ack polling: 0x"));
-        PrintHex8(addressForAckPolling>>3);
-        Serial.println();
       }
       if (ackPolling(addressForAckPolling) == -1)
       {
@@ -360,9 +356,7 @@ int menageWritting(char NVMorEEPROM, char SERIALorMEM, char ARDU_FLASHorEEPROM, 
       } else {
         if(selectionMode == 'm') Serial.println(F("ready")); // print only in manual mode
         delay(100);
-        Serial.println(F("ack polling sie udalo")); 
       }
-      //Serial.println(F("Wyszedles z ack polling")); // Display for user
     }
 
   if (updateSelection == 'u' ) {
@@ -506,26 +500,17 @@ int ackPolling(int addressForAckPolling) {
 /* Function to power cycle the GreenPAK device
 */
 void powercycle() {
-  Serial.println(F("Power Cycling!")); // print only in manual mode
-  /*digitalWrite(VDD, LOW);
-  delay(500);
-  digitalWrite(VDD, HIGH);*/
-  Serial.println(F("Sending soft reset command to addres..."));
-  Serial.print(F("0x"));
-  PrintHex8(slave_address);
-
+  //Serial.println(F("Sending soft reset command to addres..."));
+  //Serial.print(F("0x"));
+  //PrintHex8(slave_address);
   Wire.beginTransmission(slave_address<<3);
   Wire.write(0xc8);
-  // 4. Wyślij wartość 0x02, aby ustawić bit 1601 na '1' (wyzwalając reset)
   Wire.write(0x02); 
-  
   // 5. Zakończ transmisję i wyślij STOP
   uint8_t error = Wire.endTransmission();
   if (error == 0) {
-    Serial.println(F("Soft reset wysłany poprawnie"));
-    
-    // Układ potrzebuje ułamka sekundy na fizyczne przeładowanie danych z NVM
-    delay(10); 
+    Serial.println(F("Power Cycling!")); // print only in manual mode
+    delay(10); // Układ potrzebuje ułamka sekundy na fizyczne przeładowanie danych z NVM
   } else {
     Serial.print(F("Błąd wysyłania komendy soft reset! Kod błędu (NACK): "));
     Serial.println(error);
@@ -575,7 +560,6 @@ bool save_to_EEPROM(char NVMorEEPROM, uint8_t*data, size_t rozmiar) {
       break;
     }
   }
-
   if (success) {
     if (selectionMode == 'm') Serial.println(F("Done Saving to EEPROM! (verified)"));
     return true;

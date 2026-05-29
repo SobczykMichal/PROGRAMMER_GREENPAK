@@ -71,12 +71,13 @@ int8_t requestNewSlaveAddress() {
 /* Function to request NVM or EEPROM
    returns 'n' for NVM or 'e' for EEPROM
 */
-char requestNVMorEeprom() {
+char requestNVMorEEPROMorRAM(MemoryScope scope) {
   while (1)
   {
     clearSerialBuffer();
-    char selection = query(3);
-
+    char selection;
+    if (scope == MemoryScope::NonVolatileOnly) selection = query(3);
+    if(scope == MemoryScope::AllIncludingRam) selection = query(9);
     switch (selection)
     {
       case 'n':
@@ -88,6 +89,11 @@ char requestNVMorEeprom() {
           delay(10);
           return 'e';
       case 'r':
+          // 2. KLUCZOWE ROZGRANICZENIE: Blokujemy 'r' dla trybu NonVolatileOnly
+          if (scope == MemoryScope::NonVolatileOnly) {
+              Serial.println(F("RAM is not available in this mode."));
+              continue; // Przerywa ten obieg i wraca do początku pętli while
+          }
           Serial.println(F("RAM"));
           delay(10);
           return 'r';
@@ -243,7 +249,7 @@ case 2:
   Serial.println(F("Submit slave address, 0-F:"));
   break;
 case 3:
-  Serial.println(F("MENU: n = NVM, e = EEPROM:, r = RAM:"));
+  Serial.println(F("MENU: n = NVM, e = EEPROM:"));
   break;
 case 4:
   Serial.println(F("MENU: s = SERIAL, a = ARDUINO MEMORY:"));
@@ -259,6 +265,9 @@ case 7:
   break;
 case 8:
   Serial.println(F("MENU: g = GREENPAK, A= ARDUINO:"));
+  break;
+case 9:
+  Serial.println(F("MENU: n = NVM, e = EEPROM:, r = RAM:"));
   break;
 default:
   break;

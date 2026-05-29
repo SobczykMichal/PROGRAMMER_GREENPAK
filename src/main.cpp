@@ -52,7 +52,7 @@ void loop() {
         Serial.println(F("Reading chip!")); // Display for user
         mySerial.println(F("Reading chip!")); 
         if(requestSlaveAddress() =='q') break; 
-        NVMorEEPROM = requestNVMorEeprom();
+        NVMorEEPROM = requestNVMorEEPROMorRAM( MemoryScope::AllIncludingRam);
         if (NVMorEEPROM == 'q'){
           clearSerialBuffer();
           break;
@@ -79,7 +79,7 @@ void loop() {
         if(requestSlaveAddress()== 'q'){
           break;
         }
-        NVMorEEPROM = requestNVMorEeprom(); // wykonuj to jesli request inny niz q
+        NVMorEEPROM = requestNVMorEEPROMorRAM( MemoryScope::NonVolatileOnly); // wykonuj to jesli request inny niz q
         if (NVMorEEPROM == 'q'){
           clearSerialBuffer();
           break;
@@ -100,7 +100,7 @@ void loop() {
     case 'w': 
         Serial.println(F("Writing Chip!"));
           if(requestSlaveAddress()=='q') break;;
-          NVMorEEPROM = requestNVMorEeprom();
+          NVMorEEPROM = requestNVMorEEPROMorRAM( MemoryScope::AllIncludingRam);
           clearSerialBuffer();
           if(NVMorEEPROM=='q') break;
           SERIALorMEM = requestSERIALorMEM();
@@ -122,12 +122,10 @@ void loop() {
         lastOperationStatus =  menageWritting(NVMorEEPROM, SERIALorMEM, ARDU_FLASHorEEPROM, updateSelection,NewSlaveAddress);
         ping();
         lastOperationStatus = readProgram(NVMorEEPROM, 15, 'g', ARDU_FLASHorEEPROM);
-        // Serial.println(F("Done Reading!")); // Display for user
         break;
     case 'p': 
         Serial.println(F("Pinging!"));
         ping();
-        // Serial.println(F("Done Pinging!")); // Display for user
         break;
     case 'a':
         selectionMode='a';
